@@ -3,6 +3,7 @@ import DashboardView from '../views/DashboardView.vue'
 import LandingView from '../views/LandingView.vue'
 import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignupView.vue'
+import AnonRecipeBrowserView from '../views/AnonRecipeBrowserView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
+    },
+    {
+      path: '/anonrecipebrowsing',
+      name: 'anonrecipebrowsing',
+      component: AnonRecipeBrowserView,
     },
   ],
 })
