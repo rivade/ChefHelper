@@ -31,10 +31,5 @@ const route = useRoute();
       </div>
     </nav>
   </header>
-
-  <RouterLink to="/signup">Sign up</RouterLink>
-  <RouterLink to="/login">Log in</RouterLink>
-  <RouterLink to="/dashboard">Dashboard</RouterLink>
-
   <RouterView />
 </template>
