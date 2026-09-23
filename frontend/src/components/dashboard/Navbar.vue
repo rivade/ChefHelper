@@ -17,7 +17,8 @@ function selectPage(page: string) {
 
 <template>
 	<aside
-		class="sticky top-[72px] z-20 flex h-[460px] flex-col justify-between overflow-hidden bg-white p-3 sm:h-[500px] sm:p-4 lg:h-[calc(100vh-74px)] lg:min-h-[calc(100vh-74px)] lg:overflow-visible lg:p-[30px_12px_18px]"
+		class="sticky top-[72px] z-20 flex h-20 flex-col justify-between overflow-hidden bg-white p-3 transition-[height] duration-300 ease-in-out will-change-[height] sm:p-4 lg:h-[calc(100vh-74px)] lg:min-h-[calc(100vh-74px)] lg:overflow-visible lg:p-[30px_12px_18px]"
+		:class="isMenuOpen ? 'h-[460px] sm:h-[500px]' : 'h-20'"
 	>
 		<button
 			type="button"
@@ -78,7 +79,7 @@ function selectPage(page: string) {
 				<button
 					class="group flex items-center justify-center gap-2 rounded-lg bg-[#e8e6e1] px-8 py-3 text-sm font-semibold text-black transition duration-200 hover:bg-[#dcd9d2] hover:text-[#c08153] lg:gap-3 lg:bg-transparent lg:px-4 lg:font-normal lg:hover:bg-[#f0efe9]"
 					type="button"
-					@click="selectPage('Skapa Recept'); emit('createRecipe')"
+					@click="selectPage('Skapa Recept'); isMenuOpen = false; emit('createRecipe')"
 				>
 					<span class="text-xl">＋</span>
 					<span>Skapa Recept</span>
