@@ -49,6 +49,17 @@ const recipes: Recipe[] = [
     servings: "4 portioner",
     ingredients: ["🍝 Spaghetti", "🐟 Lax", "🧀 Pecorino", "🥩 Köttbullar", "🧂 Svartpeppar"],
   },
+
+  {
+    title: "snopppasta",
+    description: "pasta med snoppar",
+    image:
+      "https://api.builder.io/api/v1/image/assets/TEMP/ea1b6f9eea4151bcc95173edd130a44c9bd3f1ef?width=550",
+    difficulty: "Lätt",
+    time: "20 min",
+    servings: "6 portioner",
+    ingredients: ["Pasta", "Snoppar"],
+  }
 ];
 
 const filteredRecipes = computed(() => {
@@ -88,7 +99,7 @@ function difficultyDots(difficulty: Recipe["difficulty"]) {
 </script>
 
 <template>
-  <section class="grid grid-cols-1 gap-7 min-[700px]:grid-cols-2 min-[1100px]:grid-cols-3 min-[1100px]:gap-[66px]">
+  <section class="grid grid-cols-1 gap-8 min-[700px]:grid-cols-2 min-[700px]:gap-10 min-[1100px]:grid-cols-3 min-[1100px]:gap-[78px]">
     <article
       v-for="recipe in filteredRecipes"
       :key="recipe.title"

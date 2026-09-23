@@ -2,22 +2,26 @@
 import { ref } from "vue";
 import Recipes from "@/components/dashboard/Recipes.vue";
 import NavBar from "@/components/dashboard/Navbar.vue";
+import SkapaRecept from "@/components/dashboard/SkapaRecept.vue";
 
 const search = ref("");
+const showCreateRecipe = ref(false);
 </script>
 
 <template>
   <div
-    class="min-h-[calc(100vh-74px)] bg-[#dfa06094] font-['Roboto'] text-[#1a1a1a]"
+    class="min-h-[calc(100vh-74px)] font-['Roboto'] text-[#1a1a1a]"
+    :class="showCreateRecipe ? 'bg-[#f1f1f0]' : 'bg-[#dfa06094]'"
   >
     <div
       class="grid min-h-[calc(100vh-74px)] grid-cols-1 lg:grid-cols-[218px_1fr]"
     >
-      <NavBar />
+      <NavBar @create-recipe="showCreateRecipe = true" />
 
       <main class="min-w-0 p-4 sm:p-5 lg:p-[34px_30px_48px]">
         <section
-          class="mb-8 hidden flex-col gap-3 sm:relative sm:mb-10 sm:flex sm:h-[34px] sm:flex-row sm:items-center sm:justify-center"
+          v-if="!showCreateRecipe"
+          class="mb-8 hidden flex-col gap-3 sm:relative sm:mb-10 sm:flex sm:h-[34px] sm:flex-row sm:items-center sm:justify-center sm:p-0"
         >
           <button
             type="button"
@@ -40,7 +44,8 @@ const search = ref("");
           </label>
         </section>
 
-        <Recipes :search="search" />
+        <Recipes v-if="!showCreateRecipe" :search="search" />
+        <SkapaRecept v-else @cancel="showCreateRecipe = false" @saved="showCreateRecipe = false" />
       </main>
     </div>
   </div>
