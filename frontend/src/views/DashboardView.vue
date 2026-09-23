@@ -16,7 +16,10 @@ const showCreateRecipe = ref(false);
     <div
       class="grid min-h-[calc(100vh-74px)] grid-cols-1 lg:grid-cols-[218px_1fr]"
     >
-      <NavBar @create-recipe="showCreateRecipe = true" />
+      <NavBar
+        @create-recipe="showCreateRecipe = true"
+        @back-to-recipes="showCreateRecipe = false"
+      />
 
       <main class="min-w-0 p-4 sm:p-5 lg:p-[34px_30px_48px]">
         <section

@@ -4,6 +4,7 @@ import { ref } from "vue";
 
 const emit = defineEmits<{
 	createRecipe: [];
+	backToRecipes: [];
 }>();
 
 const isMenuOpen = ref(true);
@@ -37,7 +38,7 @@ function selectPage(page: string) {
 			<button
 				type="button"
 				class="group mt-2 flex items-center justify-center gap-3 rounded-lg px-4 py-3 text-sm text-[#6b6b6b] transition duration-200 hover:bg-[#f0efe9] hover:text-black lg:mt-0"
-				@click="selectPage('Hitta recept')"
+				@click="selectPage('Hitta recept'); emit('backToRecipes')"
 			>
 				<span
 					class="text-xl text-black transition duration-200 group-hover:text-[#c08153]"
