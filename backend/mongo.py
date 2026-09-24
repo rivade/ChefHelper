@@ -33,8 +33,12 @@ def test_connection():
 
     print(client.list_database_names())
 
-def get_recipes():
+def get_recipes_public():
     return json.loads(json_util.dumps(publiccollection.find()))
+
+def get_recipes_private(user_id):
+    privatecollection = db[f"private-{user_id}"]
+    return json.loads(json_util.dumps(privatecollection.find()))
 
 def post_recipe_public(recipe):
     result = publiccollection.insert_one(recipe.copy())

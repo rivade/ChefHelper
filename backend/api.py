@@ -51,9 +51,14 @@ def init():
         return {"message": "API fungerar"}
     
     @app.get("/api/recipes")
-    def get_recipes():
-        """Retrieve all recipes"""
-        return mongo.get_recipes()
+    def get_recipes_public():
+        """Retrieve public recipes"""
+        return mongo.get_recipes_public()
+    
+    @app.get("/api/recipes/private/{user_id}")
+    def get_recipes_private(user_id: str):
+        """Retrieve private recipes"""
+        return mongo.get_recipes_private(user_id)
     
     @app.post("/api/recipes", status_code=201)
     def upload_recipe_public(recipe: RecipeCreate):
