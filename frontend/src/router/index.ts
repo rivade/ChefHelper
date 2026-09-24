@@ -4,6 +4,7 @@ import LandingView from '../views/LandingView.vue'
 import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignupView.vue'
 import AnonRecipeBrowserView from '../views/AnonRecipeBrowserView.vue'
+import SkapaRecept from '../components/dashboard/SkapaRecept.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,6 +33,11 @@ const router = createRouter({
       path: '/anonrecipebrowsing',
       name: 'anonrecipebrowsing',
       component: AnonRecipeBrowserView,
+    },
+    {
+      path: '/skapa-recept',
+      name: 'skapa-recept',
+      component: SkapaRecept,
     },
   ],
 })

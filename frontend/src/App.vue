@@ -5,7 +5,7 @@ const route = useRoute();
 </script>
 
 <template>
-  <header class="h-[72px] bg-[#EFEFEB] p-3 font-['Roboto']">
+  <header class="sticky top-0 z-30 h-[72px] bg-[#EFEFEB] p-3 font-['Roboto']">
     <nav class="flex h-full items-center justify-between">
       <RouterLink
         to="/"
@@ -31,6 +31,5 @@ const route = useRoute();
       </div>
     </nav>
   </header>
-
   <RouterView />
 </template>
