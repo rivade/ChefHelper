@@ -1,7 +1,24 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router";
+import { useAuth0 } from "@auth0/auth0-vue";
 
-const router = useRouter();
+const { loginWithRedirect } = useAuth0();
+
+const signUp = () =>
+  loginWithRedirect({
+    authorizationParams: {
+      screen_hint: "signup",
+    },
+    appState: {
+      target: "/dashboard",
+    },
+  });
+
+const logIn = () =>
+  loginWithRedirect({
+    appState: {
+      target: "/dashboard",
+    },
+  });
 </script>
 
 <template>
@@ -19,14 +36,14 @@ const router = useRouter();
       <button
         type="button"
         class="rounded-[10px] bg-[#C3A078] px-10 py-4 text-lg font-semibold text-white shadow-[0_2px_8px_0_rgba(45,106,79,0.18)]"
-        @click="router.push('/signup')"
+        @click="signUp"
       >
         Skapa konto
       </button>
       <button
         type="button"
         class="rounded-[10px] border border-[#DEDED8] bg-white px-10 py-4 text-lg font-semibold text-[#1A1A1A] shadow-[0_2px_8px_0_rgba(0,0,0,0.06)]"
-        @click="router.push('/login')"
+        @click="logIn"
       >
         Logga in
       </button>

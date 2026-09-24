@@ -1,3 +1,4 @@
+import { createAuthGuard } from '@auth0/auth0-vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '../views/DashboardView.vue'
 import LandingView from '../views/LandingView.vue'
@@ -16,6 +17,7 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
+      beforeEnter: createAuthGuard(),
     },
     {
       path: '/anonrecipebrowsing',
