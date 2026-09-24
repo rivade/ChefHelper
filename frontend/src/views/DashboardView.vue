@@ -5,25 +5,22 @@ import NavBar from "@/components/dashboard/Navbar.vue";
 import SkapaRecept from "@/components/dashboard/SkapaRecept.vue";
 
 const search = ref("");
-const showCreateRecipe = ref(false);
+const activePage = ref("Hitta recept");
 </script>
 
 <template>
   <div
     class="min-h-[calc(100vh-74px)] font-['Roboto'] text-[#1a1a1a]"
-    :class="showCreateRecipe ? 'bg-[#f1f1f0]' : 'bg-[#dfa06094]'"
+    :class="activePage === 'Skapa Recept' ? 'bg-[#f1f1f0]' : 'bg-[#dfa06094]'"
   >
     <div
       class="grid min-h-[calc(100vh-74px)] grid-cols-1 lg:grid-cols-[218px_1fr]"
     >
-      <NavBar
-        @create-recipe="showCreateRecipe = true"
-        @back-to-recipes="showCreateRecipe = false"
-      />
+      <NavBar v-model:active-page="activePage" />
 
       <main class="min-w-0 p-4 sm:p-5 lg:p-[34px_30px_48px]">
         <section
-          v-if="!showCreateRecipe"
+          v-if="activePage !== 'Skapa Recept'"
           class="mb-8 hidden flex-col gap-3 sm:relative sm:mb-10 sm:flex sm:h-[34px] sm:flex-row sm:items-center sm:justify-center sm:p-0"
         >
           <button
@@ -47,8 +44,12 @@ const showCreateRecipe = ref(false);
           </label>
         </section>
 
-        <Recipes v-if="!showCreateRecipe" :search="search" />
-        <SkapaRecept v-else @cancel="showCreateRecipe = false" @saved="showCreateRecipe = false" />
+        <SkapaRecept
+          v-if="activePage === 'Skapa Recept'"
+          @cancel="activePage = 'Hitta recept'"
+          @saved="activePage = 'Hitta recept'"
+        />
+        <Recipes v-else :search="search" />
       </main>
     </div>
   </div>
