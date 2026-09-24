@@ -1,5 +1,0 @@
-<template>
-  <main>
-    <h1>Sign up page</h1>
-  </main>
-</template>
