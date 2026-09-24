@@ -65,9 +65,11 @@ const errors = computed(() => ({
                 ? "Minuter måste vara mellan 0 och 59."
                 : "",
     portions:
-        !isNaN(numericValues.value.portions) && numericValues.value.portions > 0
+        !isNaN(numericValues.value.portions) &&
+            numericValues.value.portions > 0 &&
+            numericValues.value.portions <= 100
             ? ""
-            : "Portioner måste vara större än 0.",
+            : "Portioner måste vara mellan 1 och 100.",
     difficulty:
         difficulty.value >= 1 && difficulty.value <= 5
             ? ""
@@ -92,6 +94,12 @@ function handleHoursInput() {
 function handleMinutesInput() {
     if (Number(cookingMinutes.value) > 59) {
         cookingMinutes.value = "59";
+    }
+}
+
+function handlePortionsInput() {
+    if (Number(portions.value) > 100) {
+        portions.value = "100";
     }
 }
 
@@ -171,7 +179,7 @@ function cancel() {
                         </div>
                         <input v-model="portions"
                             class="mt-2.5 w-full rounded-[9px] bg-[#dededc] px-3.5 py-2.5 text-xs outline-none transition focus:bg-[#e5e4e1] focus:ring-2 focus:ring-[#b4895e]/40 sm:text-sm"
-                            type="number" min="1" placeholder="Portioner" />
+                            type="number" min="1" max="100" placeholder="Portioner" @input="handlePortionsInput" />
                         <p v-if="submitted && errors.cookingtime" class="mt-1 text-xs text-[#b42318]">{{
                             errors.cookingtime }}</p>
                         <p v-if="submitted && errors.portions" class="mt-1 text-xs text-[#b42318]">{{ errors.portions }}
