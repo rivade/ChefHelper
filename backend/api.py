@@ -12,7 +12,7 @@ class RecipeCreate(BaseModel):
     ingredients: str = Field(min_length=1)
     instructions: str = Field(min_length=1)
     cookingtime: list[int] = Field(min_length=2, max_length=2)
-    portions: int = Field(gt=0)
+    portions: int = Field(gt=0, le=100)
     difficulty: int = Field(ge=1, le=5)
 
     @field_validator("cookingtime")
