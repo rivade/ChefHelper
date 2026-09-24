@@ -20,8 +20,8 @@ def init():
     global db
     db = client[db_name]
 
-    global collection
-    collection = db['publicrecipes']
+    global publiccollection
+    publiccollection = db['publicrecipes']
 
 
 def test_connection():
@@ -34,15 +34,28 @@ def test_connection():
     print(client.list_database_names())
 
 def get_recipes():
-    return json.loads(json_util.dumps(collection.find()))
+    return json.loads(json_util.dumps(publiccollection.find()))
 
-def post_recipe(recipe):
-    result = collection.insert_one(recipe.copy())
+def post_recipe_public(recipe):
+    result = publiccollection.insert_one(recipe.copy())
     return {
         "_id": str(result.inserted_id),
         **recipe
     }
 
-def delete_recipe(recipe_id):
-    result = collection.delete_one({"_id": ObjectId(recipe_id)})
+def post_recipe_private(recipe, user_id):
+    privatecollection = db[f"private-{user_id}"]
+    result = privatecollection.insert_one(recipe.copy())
+    return {
+        "_id": str(result.inserted_id),
+        **recipe
+    }
+
+def delete_recipe_public(recipe_id):
+    result = publiccollection.delete_one({"_id": ObjectId(recipe_id)})
+    return {"deleted_count": result.deleted_count}
+
+def delete_recipe_private(recipe_id, user_id):
+    privatecollection = db[f"private-{user_id}"]
+    result = privatecollection.delete_one({"_id": ObjectId(recipe_id)})
     return {"deleted_count": result.deleted_count}

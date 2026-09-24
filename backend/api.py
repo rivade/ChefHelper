@@ -56,13 +56,23 @@ def init():
         return mongo.get_recipes()
     
     @app.post("/api/recipes", status_code=201)
-    def create_recipe(recipe: RecipeCreate):
-        """Create a new recipe"""
-        return mongo.post_recipe(recipe.model_dump())
+    def upload_recipe_public(recipe: RecipeCreate):
+        """Upload recipe to public database"""
+        return mongo.post_recipe_public(recipe.model_dump())
+
+    @app.post("/api/recipes/private/{user_id}", status_code=201)
+    def upload_recipe_private(recipe: RecipeCreate, user_id: str):
+        """Upload recipe to users own private collection"""
+        return mongo.post_recipe_private(recipe.model_dump(), user_id)
 
     @app.delete("/api/recipes/{recipe_id}")
-    def delete_recipe(recipe_id: str):
-        """Delete a recipe by its ID"""
-        return mongo.delete_recipe(recipe_id)
+    def delete_recipe_public(recipe_id: str):
+        """Delete a public recipe by its ID"""
+        return mongo.delete_recipe_public(recipe_id)
+    
+    @app.delete("/api/recipes/private/{user_id}/{recipe_id}")
+    def delete_recipe_private(recipe_id: str, user_id: str):
+        """Delete a private recipe by its ID"""
+        return mongo.delete_recipe_private(recipe_id, user_id)
 
     return app
