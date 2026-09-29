@@ -1,163 +1,95 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-
-type Recipe = {
-    title: string;
-    description: string;
-    image: string;
-    difficulty: "Lätt" | "Medel" | "Komplex";
-    time: string;
-    servings: string;
-    ingredients: string[];
-};
+import { computed } from "vue";
+import type { Recipe } from "./VisaRecept.vue";
 
 const props = defineProps<{
     search: string;
+    activePage: string;
+    recipes: Recipe[];
 }>();
 
-const favorites = ref<string[]>([]);
+const emit = defineEmits<{
+    "select-recipe": [recipe: Recipe];
+    "delete-recipe": [id: string];
+    "toggle-favorite": [id: string];
+}>();
 
-const recipes: Recipe[] = [
-    {
-        title: "Beef Wellington",
-        description: "Brittisk klassiker med oxfilé",
-        image:
-            "https://api.builder.io/api/v1/image/assets/TEMP/ea1b6f9eea4151bcc95173edd130a44c9bd3f1ef?width=550",
-        difficulty: "Komplex",
-        time: "2 tim 30 min",
-        servings: "6 portioner",
-        ingredients: ["🥩 Oxfilé", "🥐 Smördeg", "🍄 Svamp", "🧅 Schalottenlök", "🥬 Spenat", "🧈 Smör"],
-    },
-    {
-        title: "Pasta Carbonara",
-        description: "Klassisk italiensk pasta",
-        image:
-            "https://api.builder.io/api/v1/image/assets/TEMP/0324cc82370f04384f90ebb1784338b69ffb6de8?width=550",
-        difficulty: "Medel",
-        time: "25 min",
-        servings: "4 portioner",
-        ingredients: ["🍝 Spaghetti", "🥚 Ägg", "🧀 Pecorino", "🥓 Guanciale", "🧂 Svartpeppar"],
-    },
-    {
-        title: "Spaghetti med lax och köttbullar",
-        description: "Italiensk pasta med lax och köttbullar",
-        image:
-            "https://api.builder.io/api/v1/image/assets/TEMP/5ed7e4545f97a358a4966ccd80f56651d62652ba?width=550",
-        difficulty: "Lätt",
-        time: "30 min",
-        servings: "4 portioner",
-        ingredients: ["🍝 Spaghetti", "🐟 Lax", "🧀 Pecorino", "🥩 Köttbullar", "🧂 Svartpeppar"],
-    },
-];
+const fallbackImage = "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop";
+
+function handleImageError(event: Event) {
+    const target = event.target as HTMLImageElement;
+    target.src = fallbackImage;
+}
 
 const filteredRecipes = computed(() => {
-    const query = props.search.toLowerCase().trim();
+    let list = props.recipes;
 
-    return recipes.filter((recipe) => {
-        return (
-            !query ||
-            recipe.title.toLowerCase().includes(query) ||
-            recipe.description.toLowerCase().includes(query) ||
-            recipe.ingredients.some((item) => item.toLowerCase().includes(query))
+    if (props.activePage === "Favoriter") {
+        list = list.filter((r) => r.isFavorite);
+    } else if (props.activePage === "Mina recept") {
+        list = list.filter((r) => r.isUserCreated);
+    }
+
+    if (props.search.trim()) {
+        const q = props.search.toLowerCase();
+        list = list.filter(
+            (r) => r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q)
         );
-    });
+    }
+
+    return list;
 });
-
-function toggleFavorite(title: string) {
-    favorites.value = favorites.value.includes(title)
-        ? favorites.value.filter((item) => item !== title)
-        : [...favorites.value, title];
-}
-
-function difficultyColor(difficulty: Recipe["difficulty"]) {
-    return {
-        Lätt: "bg-green-500",
-        Medel: "bg-amber-400",
-        Komplex: "bg-purple-600",
-    }[difficulty];
-}
-
-function difficultyDots(difficulty: Recipe["difficulty"]) {
-    return {
-        Lätt: 1,
-        Medel: 3,
-        Komplex: 5,
-    }[difficulty];
-}
 </script>
 
 <template>
-    <section
-        class="grid grid-cols-1 gap-8 min-[700px]:grid-cols-2 min-[700px]:gap-10 min-[1100px]:grid-cols-3 min-[1100px]:gap-[78px]">
-        <article v-for="recipe in filteredRecipes" :key="recipe.title"
-            class="overflow-hidden rounded-[14px] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.1)] transition duration-300 hover:-translate-y-1.5 hover:shadow-xl">
-            <div class="relative h-[150px] overflow-hidden">
-                <img :src="recipe.image" :alt="recipe.title" class="h-full w-full object-cover" />
+    <div>
+        <div v-if="filteredRecipes.length === 0" class="py-12 text-center text-gray-500">
+            <p v-if="activePage === 'Favoriter'" class="text-base">Inga favoriter ännu. Klicka på hjärtat på ett recept
+                för att spara det här!</p>
+            <p v-else class="text-base">Inga recept hittades.</p>
+        </div>
 
-                <span class="absolute right-2.5 top-4 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white"
-                    :class="difficultyColor(recipe.difficulty)">
-                    {{ recipe.difficulty }}
-                </span>
+        <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div v-for="recipe in filteredRecipes" :key="recipe.id"
+                class="flex flex-col justify-between overflow-hidden rounded-xl bg-white p-4 shadow-sm transition hover:shadow-md">
+                <div>
+                    <div class="relative">
+                        <img :src="recipe.image || fallbackImage" :alt="recipe.title" @error="handleImageError"
+                            :style="{ objectPosition: recipe.imagePosition || 'center center' }"
+                            class="h-44 w-full rounded-lg object-cover" />
 
-                <button type="button"
-                    class="absolute left-2.5 top-2.5 grid h-7 w-7 place-items-center rounded-full bg-white/90 text-xl transition hover:scale-110"
-                    :class="favorites.includes(recipe.title) ? 'text-red-500' : 'text-[#6b6b6b] hover:text-[#c08153]'"
-                    :aria-label="`Spara ${recipe.title} som favorit`" :aria-pressed="favorites.includes(recipe.title)"
-                    @click="toggleFavorite(recipe.title)">
-                    {{ favorites.includes(recipe.title) ? "♥" : "♡" }}
-                </button>
-            </div>
+                        <!-- Interactive Heart Icon -->
+                        <button type="button" @click.stop="emit('toggle-favorite', recipe.id)"
+                            class="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-base backdrop-blur-xs transition hover:scale-110 shadow-sm"
+                            :title="recipe.isFavorite ? 'Ta bort från favoriter' : 'Lägg till i favoriter'">
+                            <span v-if="recipe.isFavorite">❤️</span>
+                            <span v-else class="grayscale opacity-60 hover:opacity-100">🤍</span>
+                        </button>
+                    </div>
 
-            <div class="p-4 pb-[15px]">
-                <h2 class="text-[15px] font-semibold leading-[19px]">
-                    {{ recipe.title }}
-                </h2>
-
-                <p class="mb-3.5 mt-0.5 min-h-[17px] truncate text-[11px] text-[#9a9a9a]">
-                    {{ recipe.description }}
-                </p>
-
-                <div class="flex items-center gap-2 text-xs text-[#6b6b6b]">
-                    <span>◷ {{ recipe.time }}</span>
-                    <i class="h-3.5 w-px bg-[#dedede]"></i>
-                    <span>⌁ {{ recipe.servings }}</span>
-                </div>
-
-                <div class="mt-3.5 min-h-20 border-t border-[#f0efe9] pt-2.5">
-                    <h3 class="mb-2 text-[10px] font-semibold uppercase tracking-[0.5px] text-[#5a5248]">
-                        Ingredienser
-                    </h3>
-
-                    <div class="flex flex-wrap gap-1">
-                        <span v-for="ingredient in recipe.ingredients" :key="ingredient"
-                            class="rounded-full bg-[#f7ecec] px-2 py-1 text-[10px] text-[#5a5248] transition hover:bg-[#f1dddd]">
-                            {{ ingredient }}
+                    <div class="mt-3 flex items-center justify-between">
+                        <span class="rounded bg-[#b4895e]/15 px-2 py-0.5 text-xs font-medium text-[#b4895e]">
+                            {{ recipe.difficulty }}
                         </span>
+                        <span class="text-xs text-gray-500">{{ recipe.time }}</span>
                     </div>
+
+                    <h3 class="mt-2 text-lg font-bold text-[#1a1a1a]">{{ recipe.title }}</h3>
+                    <p class="mt-1 line-clamp-2 text-xs text-gray-600">{{ recipe.description }}</p>
                 </div>
 
-                <div class="mt-2 flex items-center gap-1">
-                    <div class="flex gap-1">
-                        <span v-for="index in 5" :key="index" class="h-1.5 w-1.5 rounded-full" :class="index <= difficultyDots(recipe.difficulty)
-                                ? difficultyColor(recipe.difficulty)
-                                : 'bg-[#ebebeb]'
-                            "></span>
-                    </div>
-
-                    <small class="flex-1 text-[10px] text-[#9a9a9a]">
-                        Svårighetsgrad
-                    </small>
-
-                    <button type="button"
-                        class="h-[25px] min-w-[83px] rounded-lg bg-[#2d2d2d] text-[11px] font-semibold text-white transition hover:bg-black">
+                <div class="mt-4 flex items-center justify-between border-t border-[#deddd9] pt-3">
+                    <button type="button" @click="emit('select-recipe', recipe)"
+                        class="rounded-[9px] bg-[#b89a72] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#a7875f]">
                         Visa recept
+                    </button>
+
+                    <button v-if="recipe.isUserCreated" type="button" @click="emit('delete-recipe', recipe.id)"
+                        class="text-xs text-red-600 transition hover:underline">
+                        Ta bort
                     </button>
                 </div>
             </div>
-        </article>
-
-        <p v-if="filteredRecipes.length === 0" class="col-span-full text-sm text-[#6b6b6b]">
-            Inga recept matchar din sökning.
-        </p>
-    </section>
+        </div>
+    </div>
 </template>
