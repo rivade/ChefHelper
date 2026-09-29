@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { Recipe } from "./VisaRecept.vue";
+import type { Recipe } from "../../types/recipe.ts";
 
 const props = defineProps<{
     search: string;

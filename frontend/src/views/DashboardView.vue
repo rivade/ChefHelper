@@ -3,7 +3,8 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import Recipes from "@/components/dashboard/Recipes.vue";
 import NavBar from "@/components/dashboard/Navbar.vue";
 import SkapaRecept, { type RecipePayload } from "@/components/dashboard/SkapaRecept.vue";
-import VisaRecept, { type Recipe } from "@/components/dashboard/VisaRecept.vue";
+import VisaRecept from "@/components/dashboard/VisaRecept.vue";
+import type { Recipe } from "../types/recipe.ts";
 
 type ComplexityFilter = "Alla" | "1 - Lätt" | "2 - Medel" | "3 - Komplex";
 
