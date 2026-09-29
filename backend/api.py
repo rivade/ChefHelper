@@ -28,7 +28,7 @@ class RecipeCreate(BaseModel):
 
 
 def init():
-    app = FastAPI(title="StudyBoard API")
+    app = FastAPI(title="ChefHelper API")
     allowed_origins = [
         origin.strip()
         for origin in os.getenv(
