@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 import mongo
 
+#TODO Add security to API
+
 
 class RecipeCreate(BaseModel):
     author: str = Field(min_length=1)
