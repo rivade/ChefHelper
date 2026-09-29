@@ -13,7 +13,7 @@ class RecipeCreate(BaseModel):
     instructions: str = Field(min_length=1)
     cookingtime: list[int] = Field(min_length=2, max_length=2)
     portions: int = Field(gt=0, le=100)
-    difficulty: int = Field(ge=1, le=5)
+    difficulty: int = Field(ge=1, le=3)
 
     @field_validator("cookingtime")
     @classmethod
@@ -37,7 +37,7 @@ class RecipePatch(BaseModel):
     instructions: str | None = Field(default=None, min_length=1)
     cookingtime: list[int] | None = Field(default=None, min_length=2, max_length=2)
     portions: int | None = Field(default=None, gt=0, le=100)
-    difficulty: int | None = Field(default=None, ge=1, le=5)
+    difficulty: int | None = Field(default=None, ge=1, le=3)
 
     @field_validator("cookingtime")
     @classmethod
