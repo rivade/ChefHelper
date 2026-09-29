@@ -8,6 +8,7 @@ export type Recipe = {
     time: string;
     servings: string;
     ingredients: string;
+    author: string;
     instructions?: string;
     isUserCreated?: boolean;
     isFavorite?: boolean;

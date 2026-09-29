@@ -4,9 +4,28 @@ import type { Recipe } from "./types/recipe.ts";
 
 export const publicRecipes = ref<Recipe[]>([]);
 export const userRecipes = ref<Recipe[]>([]);
-export const favoriteRecipes = ref<Recipe[]>([]);
 
 const API_URL = 'http://localhost:8001/api/recipes'
+
+export async function loadPublicRecipes() {
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+            throw new Error(`Request failed: ${response.status}`);
+        }
+
+        const recipes: unknown = await response.json();
+        if (!Array.isArray(recipes)) {
+            throw new Error('Unexpected recipes response');
+        }
+
+        publicRecipes.value = recipes as Recipe[];
+    } catch (error) {
+        alert('Kunde inte ladda in recept');
+    }
+}
+
+
 
 export function useRecipeHandler() {
     const { user, isAuthenticated } = useAuth0();
@@ -19,7 +38,9 @@ export function useRecipeHandler() {
         return userId;
     }
 
-    async function postRecipePublic(recipe: Recipe) {
+    async function postRecipePublic(
+        recipe: Omit<Recipe, "id" | "author">
+    ): Promise<Recipe | null> {
         try {
             const userId = encodeURIComponent(getUserId());
             const response = await fetch(`${API_URL}/${userId}`, {
@@ -34,9 +55,12 @@ export function useRecipeHandler() {
                 throw new Error(`Request failed: ${response.status}`);
             }
 
-            publicRecipes.value = [...publicRecipes.value, recipe];
+            const savedRecipe = await response.json() as Recipe;
+            publicRecipes.value = [...publicRecipes.value, savedRecipe];
+            return savedRecipe;
         } catch {
             alert('Kunde inte spara recept');
+            return null;
         }
     }
 
@@ -92,5 +116,5 @@ export function useRecipeHandler() {
         }
     }
 
-    return { postRecipePublic, postRecipePrivate, updateRecipe };
+    return { postRecipePublic, postRecipePrivate, updateRecipe, getUserId };
 }

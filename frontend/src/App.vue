@@ -1,7 +1,13 @@
 <script setup lang="ts">
+import { onMounted } from "vue";
 import { useRoute } from "vue-router";
+import { loadPublicRecipes } from "./RecipeHandler.ts";
 import logo from "./assets/logo.svg";
 const route = useRoute();
+
+onMounted(() => {
+  void loadPublicRecipes();
+});
 </script>
 
 <template>
