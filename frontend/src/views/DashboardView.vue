@@ -27,7 +27,7 @@ const recipes = ref<Recipe[]>([
     difficulty: "Lätt",
     time: "20 min",
     servings: "4 portioner",
-    ingredients: ["400g Pasta", "300g Kräftstjärtar", "2.5dl Vispgrädde"],
+    ingredients: "400g Pasta, 300g Kräftstjärtar, 2.5dl Vispgrädde",
     instructions: "1. Koka pastan...\n2. Fräs vitlök...",
     isUserCreated: false,
     isFavorite: false
@@ -41,7 +41,7 @@ const recipes = ref<Recipe[]>([
     difficulty: "Medel",
     time: "45 min",
     servings: "4 portioner",
-    ingredients: ["500g Nötfärs", "1 st Gul lök", "2 msk Tomatpuré"],
+    ingredients: "500g Nötfärs 1 st Gul lök2 msk Tomatpuré",
     instructions: "1. Hacka löken...",
     isUserCreated: false,
     isFavorite: false
@@ -85,7 +85,7 @@ function handleRecipeSaved(p: RecipePayload) {
     difficulty: mapDiff(p.difficulty),
     time: formatTime(p.cookingtime[0], p.cookingtime[1]),
     servings: `${p.portions} portioner`,
-    ingredients: p.ingredients.split("\n").map(i => i.replace(/^[•*-]\s*/, "").trim()).filter(Boolean),
+    ingredients: p.ingredients,
     instructions: p.instructions,
     isUserCreated: true,
     isFavorite: false

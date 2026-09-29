@@ -7,7 +7,7 @@ export type Recipe = {
     difficulty: number | string;
     time: string;
     servings: string;
-    ingredients: string[];
+    ingredients: string;
     instructions?: string;
     isUserCreated?: boolean;
     isFavorite?: boolean;

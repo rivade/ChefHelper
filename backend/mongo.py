@@ -1,8 +1,6 @@
 import os
-import json
 import pymongo
 from bson import ObjectId
-from bson import json_util
 from dotenv import load_dotenv
 from pymongo import ReturnDocument
 from pymongo.server_api import ServerApi
@@ -35,31 +33,35 @@ def test_connection():
     print(client.list_database_names())
 
 #Public-------------------------------------------------------------------
-def get_recipes_public():
-    return json.loads(json_util.dumps(publiccollection.find()))
-
-
-def post_recipe_public(recipe):
-    result = publiccollection.insert_one(recipe.copy())
+def _serialize_recipe(recipe):
     return {
-        "_id": str(result.inserted_id),
-        **recipe
+        "id": str(recipe["_id"]),
+        **{key: value for key, value in recipe.items() if key != "_id"},
     }
 
-def patch_recipe_public(recipe_id, updates):
+
+def get_recipes_public():
+    return [_serialize_recipe(recipe) for recipe in publiccollection.find()]
+
+
+def post_recipe_public(recipe, user_id):
+    recipe = {**recipe, "author": user_id}
+    result = publiccollection.insert_one(recipe.copy())
+    return _serialize_recipe({"_id": result.inserted_id, **recipe})
+
+def patch_recipe_public(recipe_id, updates, user_id):
     if not ObjectId.is_valid(recipe_id):
         return None
 
     updated_recipe = publiccollection.find_one_and_update(
-        {"_id": ObjectId(recipe_id)},
+        {"_id": ObjectId(recipe_id), "author": user_id},
         {"$set": updates},
         return_document=ReturnDocument.AFTER,
     )
     if updated_recipe is None:
         return None
 
-    updated_recipe["_id"] = str(updated_recipe["_id"])
-    return updated_recipe
+    return _serialize_recipe(updated_recipe)
 
 def delete_recipe_public(recipe_id):
     result = publiccollection.delete_one({"_id": ObjectId(recipe_id)})
@@ -68,15 +70,13 @@ def delete_recipe_public(recipe_id):
 #Private--------------------------------------------------------------------
 def get_recipes_private(user_id):
     privatecollection = db[f"private-{user_id}"]
-    return json.loads(json_util.dumps(privatecollection.find()))
+    return [_serialize_recipe(recipe) for recipe in privatecollection.find()]
 
 def post_recipe_private(recipe, user_id):
     privatecollection = db[f"private-{user_id}"]
+    recipe = {**recipe, "author": user_id}
     result = privatecollection.insert_one(recipe.copy())
-    return {
-        "_id": str(result.inserted_id),
-        **recipe
-    }
+    return _serialize_recipe({"_id": result.inserted_id, **recipe})
 
 def patch_recipe_private(recipe_id, updates, user_id):
     if not ObjectId.is_valid(recipe_id):
@@ -84,15 +84,14 @@ def patch_recipe_private(recipe_id, updates, user_id):
 
     privatecollection = db[f"private-{user_id}"]
     updated_recipe = privatecollection.find_one_and_update(
-        {"_id": ObjectId(recipe_id)},
+        {"_id": ObjectId(recipe_id), "author": user_id},
         {"$set": updates},
         return_document=ReturnDocument.AFTER,
     )
     if updated_recipe is None:
         return None
 
-    updated_recipe["_id"] = str(updated_recipe["_id"])
-    return updated_recipe
+    return _serialize_recipe(updated_recipe)
 
 def delete_recipe_private(recipe_id, user_id):
     privatecollection = db[f"private-{user_id}"]
