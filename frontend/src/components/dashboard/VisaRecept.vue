@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
 export type Recipe = {
     id: string;
     title: string;
     description: string;
     image: string;
     imagePosition?: string;
-    difficulty: "Lätt" | "Medel" | "Komplex";
+    difficulty: number | string;
     time: string;
     servings: string;
     ingredients: string[];
@@ -25,6 +27,16 @@ const emit = defineEmits<{
 }>();
 
 const fallbackImage = "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&auto=format&fit=crop";
+
+const difficultyLabel = computed(() => {
+    if (typeof props.recipe.difficulty === "number") {
+        if (props.recipe.difficulty === 1) return "Lätt";
+        if (props.recipe.difficulty === 2) return "Medel";
+        if (props.recipe.difficulty === 3) return "Komplex";
+    }
+    // Tar bort "1 - ", "2 - ", "3 - " om det finns i strängen
+    return String(props.recipe.difficulty || "").replace(/^[0-9]\s*-\s*/, "");
+});
 
 function handleImageError(event: Event) {
     const target = event.target as HTMLImageElement;
@@ -47,7 +59,6 @@ function handleDelete() {
             </button>
 
             <div class="flex items-center gap-3">
-                <!-- Favorite toggle button inside detailed view -->
                 <button type="button" @click="emit('toggle-favorite', recipe.id)"
                     class="flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f1f0] text-lg transition hover:scale-110"
                     :title="recipe.isFavorite ? 'Ta bort från favoriter' : 'Lägg till i favoriter'">
@@ -71,7 +82,7 @@ function handleDelete() {
                 <div>
                     <span
                         class="inline-block rounded-md bg-[#b4895e]/15 px-2.5 py-1 text-xs font-medium text-[#b4895e]">
-                        {{ recipe.difficulty }}
+                        {{ difficultyLabel }}
                     </span>
                     <h1 class="mt-2 text-2xl font-bold sm:text-3xl">{{ recipe.title }}</h1>
                     <p class="mt-3 text-sm text-gray-600 leading-relaxed">{{ recipe.description }}</p>

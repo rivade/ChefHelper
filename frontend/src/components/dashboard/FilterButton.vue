@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 
-export type ComplexityOption = "all" | "lätt" | "medium" | "komplex";
+export type ComplexityOption = "all" | "lätt" | "medel" | "komplex";
 
 const props = withDefaults(
     defineProps<{
@@ -22,7 +22,7 @@ const filterRef = ref<HTMLElement | null>(null);
 const options: { label: string; value: ComplexityOption }[] = [
     { label: "Alla svårighetsgrader", value: "all" },
     { label: "Lätt", value: "lätt" },
-    { label: "Medium", value: "medium" },
+    { label: "Medel", value: "medel" },
     { label: "Komplex", value: "komplex" },
 ];
 
@@ -82,8 +82,8 @@ onUnmounted(() => {
                 <button v-for="option in options" :key="option.value" type="button" @click="selectOption(option.value)"
                     class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-xs transition-colors sm:text-sm"
                     :class="props.modelValue === option.value
-                            ? 'bg-[#b89a72] font-semibold text-white'
-                            : 'text-[#1a1a1a] hover:bg-[#e5e4e1]'
+                        ? 'bg-[#b89a72] font-semibold text-white'
+                        : 'text-[#1a1a1a] hover:bg-[#e5e4e1]'
                         ">
                     <span>{{ option.label }}</span>
                     <svg v-if="props.modelValue === option.value" class="h-4 w-4 text-white" fill="none"

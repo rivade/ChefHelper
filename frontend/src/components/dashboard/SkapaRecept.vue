@@ -18,7 +18,7 @@ const emit = defineEmits<{
     saved: [recipe: RecipePayload];
 }>();
 
-// Form styling matching original layout
+// Form styling
 const inputStyle = "w-full rounded-[9px] bg-[#dededc] px-3.5 py-2.5 text-xs text-[#1a1a1a] outline-none transition focus:bg-[#e5e4e1] focus:ring-2 focus:ring-[#b4895e]/40 sm:text-sm placeholder:text-[#8f8f8e]";
 const areaStyle = "w-full flex-1 min-h-0 resize-none rounded-[9px] bg-[#dededc] p-3 text-xs text-[#1a1a1a] outline-none transition focus:bg-[#e5e4e1] focus:ring-2 focus:ring-[#b4895e]/40 sm:text-sm placeholder:text-[#8f8f8e]";
 const badgeStyle = "grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[#b4895e] text-xs font-semibold text-white";
@@ -50,10 +50,8 @@ const isDraggingFocus = ref(false);
 
 const difficultyOptions = [
     { value: 1, label: "1 - Lätt" },
-    { value: 2, label: "2" },
-    { value: 3, label: "3 - Medel" },
-    { value: 4, label: "4" },
-    { value: 5, label: "5 - Komplex" },
+    { value: 2, label: "2 - Medel" },
+    { value: 3, label: "3 - Komplex" },
 ];
 
 const selectedDifficultyLabel = computed(
@@ -89,14 +87,12 @@ const clamp = (field: "cookingHours" | "cookingMinutes" | "portions", max: numbe
     if (Number(form[field]) > max) form[field] = String(max);
 };
 
-// Form submit triggers popup modal
 function handleFormSubmit() {
     submitted.value = true;
     if (!canSave.value) return;
     showUploadModal.value = true;
 }
 
-// File handling
 function triggerFileInput() {
     fileInputRef.value?.click();
 }
@@ -132,13 +128,11 @@ function resetImage() {
     if (fileInputRef.value) fileInputRef.value.value = "";
 }
 
-// CLICK & DRAG FOCUS POINT LOGIC
 function updateFocusFromPointer(e: PointerEvent) {
     if (!imageContainerRef.value) return;
 
     const rect = imageContainerRef.value.getBoundingClientRect();
 
-    // Calculate relative drag coordinates (0 - 100%)
     const rawX = ((e.clientX - rect.left) / rect.width) * 100;
     const rawY = ((e.clientY - rect.top) / rect.height) * 100;
 
@@ -202,7 +196,7 @@ function finalizeSave(includeImage: boolean) {
             <!-- 3-Column Layout -->
             <div class="grid flex-1 grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6 min-h-0">
 
-                <!-- Column 1 (Namn, Beskrivning, Tid och portioner) -->
+                <!-- Column 1 -->
                 <section class="flex flex-col flex-1 gap-4 min-h-0">
                     <label class="block shrink-0">
                         <span class="mb-1.5 flex items-center gap-2 text-sm font-bold text-[#1a1a1a]">
@@ -242,7 +236,7 @@ function finalizeSave(includeImage: boolean) {
                     </div>
                 </section>
 
-                <!-- Column 2 (Svårighetsgrad, Ingredienser) -->
+                <!-- Column 2 -->
                 <section class="flex flex-col flex-1 gap-4 min-h-0">
                     <div class="block shrink-0">
                         <span class="mb-1.5 flex items-center gap-2 text-sm font-bold text-[#1a1a1a]">
@@ -284,7 +278,7 @@ function finalizeSave(includeImage: boolean) {
                     </label>
                 </section>
 
-                <!-- Column 3 (Steg för steg + Buttons) -->
+                <!-- Column 3 -->
                 <section class="flex flex-col flex-1 gap-4 min-h-0 justify-between">
                     <label class="flex flex-col flex-1 min-h-0">
                         <span class="mb-1.5 flex items-center gap-2 text-sm font-bold text-[#1a1a1a] shrink-0">
@@ -296,7 +290,6 @@ function finalizeSave(includeImage: boolean) {
                             errors.instructions }}</p>
                     </label>
 
-                    <!-- Bottom Action Buttons -->
                     <div class="shrink-0 pt-2 flex flex-col items-end gap-2">
                         <p v-if="submitted && !canSave" class="text-xs text-[#b42318]">Fyll i alla obligatoriska fält
                             innan du sparar.</p>
@@ -316,7 +309,7 @@ function finalizeSave(includeImage: boolean) {
             </div>
         </form>
 
-        <!-- Upload Image & Drag Focal Point Modal -->
+        <!-- Upload Image Modal -->
         <Teleport to="body">
             <div v-if="showUploadModal"
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs select-none">
@@ -324,7 +317,6 @@ function finalizeSave(includeImage: boolean) {
 
                     <input type="file" ref="fileInputRef" accept="image/*" class="hidden" @change="handleFileSelect" />
 
-                    <!-- Upload Drop Zone -->
                     <div v-if="!selectedImage" @click="triggerFileInput" @dragover.prevent="isDraggingFile = true"
                         @dragleave.prevent="isDraggingFile = false" @drop.prevent="handleDrop"
                         class="relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center bg-[#8f8f8e]/40 p-6 text-center transition hover:bg-[#8f8f8e]/50"
@@ -337,20 +329,17 @@ function finalizeSave(includeImage: boolean) {
                         </div>
                     </div>
 
-                    <!-- Image Drag-to-Set-Focus Area -->
                     <div v-else class="relative bg-[#8f8f8e]/20 p-4">
                         <div class="mb-2 flex items-center justify-between px-1">
                             <span class="text-[11px] font-medium text-[#4a4a4a]">
                                 👆 Klicka och dra på bilden för att ställa in fokuspunkt
                             </span>
-                            <!-- Byt bild Button -->
                             <button type="button" @click="resetImage"
                                 class="rounded-md border border-[#c2c2c0] bg-white/90 px-2.5 py-1 text-xs font-semibold text-[#1a1a1a] shadow-xs transition hover:bg-white">
                                 📷 Byt bild
                             </button>
                         </div>
 
-                        <!-- Click and Drag Container -->
                         <div ref="imageContainerRef" @pointerdown="startFocusDrag"
                             class="relative h-56 w-full touch-none overflow-hidden rounded-lg bg-black/10 shadow-inner"
                             :class="isDraggingFocus ? 'cursor-grabbing' : 'cursor-grab'">
@@ -358,7 +347,6 @@ function finalizeSave(includeImage: boolean) {
                                 class="h-full w-full object-cover pointer-events-none"
                                 :style="{ objectPosition: imagePosition }" />
 
-                            <!-- Draggable Focus Target Marker -->
                             <div class="pointer-events-none absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#b89a72]/80 shadow-md backdrop-blur-xs flex items-center justify-center transition-transform duration-75"
                                 :class="{ 'scale-125 bg-[#b89a72]': isDraggingFocus }"
                                 :style="{ left: `${focusPoint.x}%`, top: `${focusPoint.y}%` }">
@@ -367,26 +355,16 @@ function finalizeSave(includeImage: boolean) {
                         </div>
                     </div>
 
-                    <!-- Dialog Text & Action Buttons -->
-                    <div class="p-6 text-center">
-                        <h2 class="text-xl font-bold text-[#1a1a1a] sm:text-2xl">Nu är du snart klar!</h2>
-                        <p class="mt-2 text-xs leading-relaxed text-[#5a5a5a] sm:text-sm">
-                            Innan du sparar ditt smarriga recept, kan du välja att lägga till en bild på maten. Det gör
-                            du här ovan.
-                        </p>
-
-                        <div class="mt-6 flex justify-center gap-3">
-                            <button type="button" @click="finalizeSave(true)"
-                                class="rounded-[10px] bg-[#b89a72] px-6 py-2.5 text-xs font-semibold text-white transition hover:bg-[#a7875f] sm:text-sm">
-                                Lägg upp
-                            </button>
-                            <button type="button" @click="finalizeSave(false)"
-                                class="rounded-[10px] bg-[#9e9e9d] px-6 py-2.5 text-xs font-semibold text-white transition hover:bg-[#8d8d8c] sm:text-sm">
-                                Spara privat
-                            </button>
-                        </div>
+                    <div class="flex items-center justify-end gap-2 bg-[#dededc] p-4 border-t border-[#c2c2c0]">
+                        <button type="button" @click="finalizeSave(false)"
+                            class="rounded-[9px] border border-[#c2c2c0] bg-white px-4 py-2 text-xs font-medium text-[#1a1a1a] transition hover:bg-[#e5e4e1] sm:text-sm">
+                            Hoppa över bild
+                        </button>
+                        <button type="button" @click="finalizeSave(true)"
+                            class="rounded-[9px] bg-[#b89a72] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#a7875f] sm:text-sm">
+                            Spara med bild
+                        </button>
                     </div>
-
                 </div>
             </div>
         </Teleport>
