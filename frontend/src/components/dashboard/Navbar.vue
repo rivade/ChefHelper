@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import ProfileMenu from "./ProfileMenu.vue";
 
 const props = withDefaults(
 	defineProps<{
@@ -90,17 +91,6 @@ function selectPage(page: string) {
 			</nav>
 		</div>
 
-		<div class="shrink-0 items-center justify-center gap-2 pt-4 text-center lg:self-stretch lg:justify-start lg:pl-1 lg:text-left"
-			:class="isMenuOpen ? 'flex' : 'hidden lg:flex'">
-			<div
-				class="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-[#e8e4dc] text-xs font-semibold">
-				T
-			</div>
-
-			<div>
-				<strong class="block text-[13px] font-medium">Theo</strong>
-				<small class="block text-[11px] text-[#9a9a9a]">Kock</small>
-			</div>
-		</div>
+		<ProfileMenu :class="isMenuOpen ? 'block' : 'hidden lg:block'" />
 	</aside>
 </template>
