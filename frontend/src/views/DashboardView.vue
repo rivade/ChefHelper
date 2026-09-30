@@ -135,8 +135,7 @@ const onOutsideClick = (e: MouseEvent) => {
 };
 
 onMounted(() => {
-  void loadPublicRecipes();
-  void loadPrivateRecipes().then(() => loadFavorites());
+  void Promise.all([loadPublicRecipes(), loadPrivateRecipes()]).then(() => loadFavorites());
   document.addEventListener("click", onOutsideClick);
 });
 
@@ -144,8 +143,8 @@ onUnmounted(() => document.removeEventListener("click", onOutsideClick));
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-74px)] font-['Roboto'] text-[#1a1a1a]"
-    :class="isDetailOrFormView ? 'bg-[#f1f1f0]' : 'bg-[#dfa06094]'">
+  <div class="min-h-[calc(100vh-74px)] font-['Roboto'] text-[#1a1a1a] transition-colors duration-500 ease-in-out"
+    :class="isDetailOrFormView ? 'bg-[#f1f1f0]' : activePage === 'Favoriter' ? 'bg-[#e9c4c5]' : activePage === 'Mina recept' ? 'bg-[#c5d8e8]' : 'bg-[#dfa06094]'">
     <div class="grid min-h-[calc(100vh-74px)] grid-cols-1 lg:grid-cols-[218px_1fr]">
       <NavBar v-model:active-page="activePage" />
 

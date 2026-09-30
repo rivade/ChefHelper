@@ -102,7 +102,7 @@ function handleSubmit() {
         servings: `${form.portions || 1} portioner`,
         ingredients: form.ingredients
             .split("\n")
-            .map((i) => i.replace(/^[•*-]\s*/, "").trim())
+            .map((i) => i.replace(/^[•*]\s*/, "").trim())
             .filter(Boolean)
             .join("\n"),
         instructions: form.instructions.trim(),
