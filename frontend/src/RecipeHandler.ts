@@ -14,7 +14,7 @@ type FavoriteInfo = {
     isFavorite: boolean;
 };
 
-export async function loadPublicRecipes() {
+export async function loadPublicRecipes(options: { silent?: boolean } = {}): Promise<boolean> {
     try {
         const response = await fetch(API_URL);
         if (!response.ok) {
@@ -27,8 +27,10 @@ export async function loadPublicRecipes() {
         }
 
         publicRecipes.value = recipes as Recipe[];
-    } catch (error) {
-        alert('Kunde inte ladda in recept');
+        return true;
+    } catch {
+        if (!options.silent) alert('Kunde inte ladda in recept');
+        return false;
     }
 }
 

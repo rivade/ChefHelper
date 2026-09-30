@@ -5,7 +5,7 @@ import NavBar from "@/components/dashboard/Navbar.vue";
 import SkapaRecept, { type RecipePayload } from "@/components/dashboard/SkapaRecept.vue";
 import VisaRecept from "@/components/dashboard/VisaRecept.vue";
 import type { Recipe } from "../types/recipe.ts";
-import { useRecipeHandler, publicRecipes, userRecipes } from "@/RecipeHandler.ts";
+import { useRecipeHandler, loadPublicRecipes, publicRecipes, userRecipes } from "@/RecipeHandler.ts";
 
 type ComplexityFilter = "Alla" | "1 - Lätt" | "2 - Medel" | "3 - Komplex";
 
@@ -100,6 +100,7 @@ const onOutsideClick = (e: MouseEvent) => {
 };
 
 onMounted(() => {
+  void loadPublicRecipes();
   void loadPrivateRecipes().then(() => loadFavorites());
   document.addEventListener("click", onOutsideClick);
 });
