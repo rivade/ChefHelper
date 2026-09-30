@@ -1,24 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
-
-export type Recipe = {
-    id: string;
-    title: string;
-    description: string;
-    image: string;
-    imagePosition?: string;
-    difficulty: number | string;
-    time: string;
-    servings: string;
-    ingredients: string[];
-    instructions?: string;
-    isUserCreated?: boolean;
-    isFavorite?: boolean;
-};
-
+import { useAuth0 } from "@auth0/auth0-vue";
+import type { Recipe } from "../../types/recipe.ts"
 const props = defineProps<{
     recipe: Recipe;
 }>();
+const { user, isAuthenticated } = useAuth0();
+const isRecipeAuthor = computed(
+    () => isAuthenticated.value && user.value?.sub === props.recipe.author
+);
 
 const emit = defineEmits<{
     back: [];
@@ -66,7 +56,7 @@ function handleDelete() {
                     <span v-else class="grayscale opacity-60 hover:opacity-100">🤍</span>
                 </button>
 
-                <button v-if="recipe.isUserCreated" type="button" @click="handleDelete"
+                <button v-if="isRecipeAuthor" type="button" @click="handleDelete"
                     class="rounded-[9px] bg-[#b42318] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#911c13] sm:text-sm">
                     Ta bort recept
                 </button>
@@ -99,13 +89,7 @@ function handleDelete() {
         <div class="mt-8 grid grid-cols-1 gap-8 border-t border-[#deddd9] pt-8 md:grid-cols-2">
             <div>
                 <h2 class="mb-4 text-lg font-bold">Ingredienser</h2>
-                <ul class="flex flex-col gap-2.5">
-                    <li v-for="(item, index) in recipe.ingredients" :key="index"
-                        class="flex items-center gap-2 text-sm text-gray-700 border-b border-[#f1f1f0] pb-2">
-                        <span class="h-1.5 w-1.5 rounded-full bg-[#b4895e]"></span>
-                        {{ item }}
-                    </li>
-                </ul>
+                <p class="whitespace-pre-line text-sm leading-relaxed text-gray-700">{{ recipe.ingredients }}</p>
             </div>
 
             <div>

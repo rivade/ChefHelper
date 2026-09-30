@@ -8,52 +8,38 @@ import mongo
 
 
 class RecipeCreate(BaseModel):
-    author: str = Field(min_length=1)
+    id: str | None = Field(default=None, exclude=True)
     title: str = Field(min_length=1)
     description: str = Field(min_length=1)
+    image: str
+    imagePosition: str | None = None
+    difficulty: int | str
+    time: str = Field(min_length=1)
+    servings: str = Field(min_length=1)
     ingredients: str = Field(min_length=1)
-    instructions: str = Field(min_length=1)
-    cookingtime: list[int] = Field(min_length=2, max_length=2)
-    portions: int = Field(gt=0, le=100)
-    difficulty: int = Field(ge=1, le=3)
-
-    @field_validator("cookingtime")
-    @classmethod
-    def validate_cookingtime(cls, value: list[int]) -> list[int]:
-        if value[0] > 72:
-            raise ValueError("cookingtime hours cannot exceed 72")
-        if value[1] > 59:
-            raise ValueError("cookingtime minutes cannot exceed 59")
-        if value[0] < 0 or value[1] < 0:
-            raise ValueError("cookingtime values cannot be negative")
-        return value
+    instructions: str | None = Field(default=None, min_length=1)
+    isUserCreated: bool | None = None
 
 
 class RecipePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    author: str | None = Field(default=None, min_length=1)
+    id: str | None = Field(default=None, exclude=True)
     title: str | None = Field(default=None, min_length=1)
     description: str | None = Field(default=None, min_length=1)
+    image: str | None = None
+    imagePosition: str | None = None
+    difficulty: int | str | None = None
+    time: str | None = Field(default=None, min_length=1)
+    servings: str | None = Field(default=None, min_length=1)
     ingredients: str | None = Field(default=None, min_length=1)
     instructions: str | None = Field(default=None, min_length=1)
-    cookingtime: list[int] | None = Field(default=None, min_length=2, max_length=2)
-    portions: int | None = Field(default=None, gt=0, le=100)
-    difficulty: int | None = Field(default=None, ge=1, le=3)
+    isUserCreated: bool | None = None
 
-    @field_validator("cookingtime")
-    @classmethod
-    def validate_cookingtime(cls, value: list[int] | None) -> list[int] | None:
-        if value is None:
-            return value
-        if value[0] > 72:
-            raise ValueError("cookingtime hours cannot exceed 72")
-        if value[1] > 59:
-            raise ValueError("cookingtime minutes cannot exceed 59")
-        if value[0] < 0 or value[1] < 0:
-            raise ValueError("cookingtime values cannot be negative")
-        return value
-
+class FavoriteInfo(BaseModel):
+    recipeId: str
+    userId: str
+    isFavorite: bool
 
 def init():
     app = FastAPI(title="ChefHelper API")
@@ -84,13 +70,13 @@ def init():
         """Retrieve public recipes"""
         return mongo.get_recipes_public()
     
-    @app.post("/api/recipes", status_code=201)
-    def upload_recipe_public(recipe: RecipeCreate):
+    @app.post("/api/recipes/{user_id}", status_code=201)
+    def upload_recipe_public(user_id: str, recipe: RecipeCreate):
         """Upload recipe to public database"""
-        return mongo.post_recipe_public(recipe.model_dump())
+        return mongo.post_recipe_public(recipe.model_dump(exclude_none=True), user_id)
 
-    @app.patch("/api/recipes/{recipe_id}")
-    def patch_recipe_public(recipe_id: str, recipe: RecipePatch):
+    @app.patch("/api/recipes/{user_id}/{recipe_id}")
+    def patch_recipe_public(user_id: str, recipe_id: str, recipe: RecipePatch):
         """Update recipe in public database"""
         updates = recipe.model_dump(exclude_unset=True)
         if not updates or any(value is None for value in updates.values()):
@@ -99,9 +85,9 @@ def init():
                 detail="Provide at least one non-null recipe field to update",
             )
 
-        updated_recipe = mongo.patch_recipe_public(recipe_id, updates)
+        updated_recipe = mongo.patch_recipe_public(recipe_id, updates, user_id)
         if updated_recipe is None:
-            raise HTTPException(status_code=404, detail="Recipe not found")
+            raise HTTPException(status_code=401, detail="Unauthorized")
         return updated_recipe
 
     @app.delete("/api/recipes/{recipe_id}")
@@ -118,7 +104,7 @@ def init():
     @app.post("/api/recipes/private/{user_id}", status_code=201)
     def upload_recipe_private(recipe: RecipeCreate, user_id: str):
         """Upload recipe to users own private collection"""
-        return mongo.post_recipe_private(recipe.model_dump(), user_id)
+        return mongo.post_recipe_private(recipe.model_dump(exclude_none=True), user_id)
 
     @app.patch("/api/recipes/private/{user_id}/{recipe_id}")
     def patch_recipe_private(user_id: str, recipe_id: str, recipe: RecipePatch):
@@ -132,12 +118,34 @@ def init():
 
         updated_recipe = mongo.patch_recipe_private(recipe_id, updates, user_id)
         if updated_recipe is None:
-            raise HTTPException(status_code=404, detail="Recipe not found")
+            raise HTTPException(status_code=401, detail="Unauthorized")
         return updated_recipe
 
     @app.delete("/api/recipes/private/{user_id}/{recipe_id}")
     def delete_recipe_private(recipe_id: str, user_id: str):
         """Delete a private recipe by its ID"""
         return mongo.delete_recipe_private(recipe_id, user_id)
+
+    #Favorite--------------------------------------------------------------------------
+    @app.get("/api/favorites/{user_id}")
+    def get_favorite_recipes(user_id: str):
+        """Retrieve a user's favorite public recipes"""
+        return mongo.get_favorite_recipes(user_id)
+
+    @app.post("/api/favorites/{user_id}/{recipe_id}", response_model=FavoriteInfo)
+    def favorite_recipe(user_id: str, recipe_id: str):
+        """Add a public recipe to a user's favorites"""
+        favorite = mongo.favorite_recipe(recipe_id, user_id)
+        if favorite is None:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        return favorite
+
+    @app.delete("/api/favorites/{user_id}/{recipe_id}", response_model=FavoriteInfo)
+    def unfavorite_recipe(user_id: str, recipe_id: str):
+        """Remove a public recipe from a user's favorites"""
+        favorite = mongo.unfavorite_recipe(recipe_id, user_id)
+        if favorite is None:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        return favorite
 
     return app

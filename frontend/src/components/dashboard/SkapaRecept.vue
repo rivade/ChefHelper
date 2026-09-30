@@ -6,7 +6,7 @@ export type RecipePayload = {
     cookingtime: [number, number]; portions: number; difficulty: number; image?: string; imagePosition?: string;
 };
 
-const emit = defineEmits<{ cancel: []; saved: [recipe: RecipePayload] }>();
+const emit = defineEmits<{ cancel: []; saved: [recipe: RecipePayload, isPrivate: boolean] }>();
 
 const inputStyle = "w-full rounded-[9px] bg-[#dededc] px-3.5 py-2.5 text-xs text-[#1a1a1a] outline-none transition focus:bg-[#e5e4e1] focus:ring-2 focus:ring-[#b4895e]/40 sm:text-sm placeholder:text-[#8f8f8e]";
 const areaStyle = "w-full flex-1 min-h-0 resize-none rounded-[9px] bg-[#dededc] p-3 text-xs text-[#1a1a1a] outline-none transition focus:bg-[#e5e4e1] focus:ring-2 focus:ring-[#b4895e]/40 sm:text-sm placeholder:text-[#8f8f8e]";
@@ -87,13 +87,13 @@ const stopFocusDrag = () => {
 
 onUnmounted(stopFocusDrag);
 
-const finalizeSave = (includeImage: boolean) => {
+const finalizeSave = (savePrivate: boolean) => {
     showUploadModal.value = false;
     emit("saved", {
         title: form.title.trim(), description: form.description.trim(), ingredients: form.ingredients.trim(), instructions: form.instructions.trim(),
         cookingtime: [hours.value, minutes.value], portions: portionsNum.value, difficulty: form.difficulty,
-        image: includeImage ? selectedImage.value : "", imagePosition: includeImage ? imagePosition.value : "50% 50%",
-    });
+        image: selectedImage.value?? "", imagePosition: imagePosition.value?? "50% 50%",
+    }, savePrivate);
 };
 </script>
 
@@ -272,11 +272,11 @@ const finalizeSave = (includeImage: boolean) => {
                             du här ovan.
                         </p>
                         <div class="flex w-full items-center justify-center gap-4">
-                            <button type="button" @click="finalizeSave(Boolean(selectedImage))"
+                            <button type="button" @click="finalizeSave(false)"
                                 class="flex-1 rounded-2xl bg-[#b59873] py-3.5 text-center text-base font-bold text-white shadow-md transition hover:bg-[#a48662] active:scale-95">
                                 Lägg upp
                             </button>
-                            <button type="button" @click="finalizeSave(false)"
+                            <button type="button" @click="finalizeSave(true)"
                                 class="flex-1 rounded-2xl bg-[#9c9c9c] py-3.5 text-center text-base font-bold text-white shadow-md transition hover:bg-[#8b8b8b] active:scale-95">
                                 Spara privat
                             </button>

@@ -3,7 +3,9 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import Recipes from "@/components/dashboard/Recipes.vue";
 import NavBar from "@/components/dashboard/Navbar.vue";
 import SkapaRecept, { type RecipePayload } from "@/components/dashboard/SkapaRecept.vue";
-import VisaRecept, { type Recipe } from "@/components/dashboard/VisaRecept.vue";
+import VisaRecept from "@/components/dashboard/VisaRecept.vue";
+import type { Recipe } from "../types/recipe.ts";
+import { useRecipeHandler, publicRecipes, userRecipes } from "@/RecipeHandler.ts";
 
 type ComplexityFilter = "Alla" | "1 - Lätt" | "2 - Medel" | "3 - Komplex";
 
@@ -15,37 +17,15 @@ const selectedComplexity = ref<ComplexityFilter>("Alla");
 const isFilterOpen = ref(false);
 const filterRef = ref<HTMLElement | null>(null);
 const defaultImg = "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop";
+const {
+  postRecipePublic,
+  postRecipePrivate,
+  deleteRecipe: deleteRecipeFromApi,
+  loadPrivateRecipes,
+  loadFavorites,
+  toggleFavorite,
+} = useRecipeHandler();
 
-const recipes = ref<Recipe[]>([
-  {
-    id: "default-1",
-    title: "Krämig Kräftpasta",
-    description: "En lyxig och snabbkrämig pasta med kräftstjärtar, vitlök och chili.",
-    image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop",
-    imagePosition: "center center",
-    difficulty: "Lätt",
-    time: "20 min",
-    servings: "4 portioner",
-    ingredients: ["400g Pasta", "300g Kräftstjärtar", "2.5dl Vispgrädde"],
-    instructions: "1. Koka pastan...\n2. Fräs vitlök...",
-    isUserCreated: false,
-    isFavorite: false
-  },
-  {
-    id: "default-2",
-    title: "Klassisk Köttfärssås",
-    description: "En välkryddad italiensk klassiker som passar hela familjen.",
-    image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&auto=format&fit=crop",
-    imagePosition: "center center",
-    difficulty: "Medel",
-    time: "45 min",
-    servings: "4 portioner",
-    ingredients: ["500g Nötfärs", "1 st Gul lök", "2 msk Tomatpuré"],
-    instructions: "1. Hacka löken...",
-    isUserCreated: false,
-    isFavorite: false
-  }
-]);
 
 const mapDiff = (d: number) => {
   if (d === 1) return "Lätt";
@@ -54,7 +34,12 @@ const mapDiff = (d: number) => {
   return "Lätt";
 };
 
-const filteredRecipes = computed(() => recipes.value.filter((r) => {
+const filteredRecipes = computed(() => {
+  const recipes = ["Mina recept", "Favoriter"].includes(activePage.value)
+    ? [...publicRecipes.value, ...userRecipes.value]
+    : publicRecipes.value;
+
+  return recipes.filter((r) => {
   const q = search.value.toLowerCase().trim();
   const matchSearch = !q || r.title?.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q);
 
@@ -65,18 +50,13 @@ const filteredRecipes = computed(() => recipes.value.filter((r) => {
   const diffClean = String(r.difficulty).toLowerCase().replace(/^[0-9]\s*-\s*/, "");
 
   return matchSearch && (diffClean === selectedClean);
-}));
+  });
+});
 
 const formatTime = (h: number, m: number) => [h > 0 && `${h} tim`, (m > 0 || !h) && `${m} min`].filter(Boolean).join(" ");
 
-const toggleFav = (id: string) => {
-  const r = recipes.value.find(x => x.id === id);
-  if (r) r.isFavorite = !r.isFavorite;
-};
-
-function handleRecipeSaved(p: RecipePayload) {
-  const newR: Recipe = {
-    id: crypto.randomUUID(),
+async function handleRecipeSaved(p: RecipePayload, privateRecipe: boolean) {
+  const recipe: Omit<Recipe, "id" | "author"> = {
     title: p.title,
     description: p.description,
     image: p.image || defaultImg,
@@ -84,13 +64,16 @@ function handleRecipeSaved(p: RecipePayload) {
     difficulty: mapDiff(p.difficulty),
     time: formatTime(p.cookingtime[0], p.cookingtime[1]),
     servings: `${p.portions} portioner`,
-    ingredients: p.ingredients.split("\n").map(i => i.replace(/^[•*-]\s*/, "").trim()).filter(Boolean),
+    ingredients: p.ingredients,
     instructions: p.instructions,
-    isUserCreated: true,
-    isFavorite: false
   };
-  recipes.value.push(newR);
-  selectedRecipe.value = newR;
+
+  const savedRecipe: Recipe | null = privateRecipe
+    ? await postRecipePrivate(recipe)
+    : await postRecipePublic(recipe);
+  if (!savedRecipe) return;
+
+  selectedRecipe.value = savedRecipe;
   previousPage.value = "Mina recept";
   activePage.value = "Visa recept";
 }
@@ -101,8 +84,11 @@ function selectRecipe(r: Recipe) {
   activePage.value = "Visa recept";
 }
 
-function deleteRecipe(id: string) {
-  recipes.value = recipes.value.filter(r => r.id !== id);
+async function deleteRecipe(id: string) {
+  const isPrivate = userRecipes.value.some(recipe => recipe.id === id);
+  const deleted = await deleteRecipeFromApi(id, isPrivate);
+  if (!deleted) return;
+
   if (selectedRecipe.value?.id === id) {
     selectedRecipe.value = null;
     activePage.value = previousPage.value !== "Visa recept" ? previousPage.value : "Mina recept";
@@ -113,7 +99,10 @@ const onOutsideClick = (e: MouseEvent) => {
   if (filterRef.value && !filterRef.value.contains(e.target as Node)) isFilterOpen.value = false;
 };
 
-onMounted(() => document.addEventListener("click", onOutsideClick));
+onMounted(() => {
+  void loadPrivateRecipes().then(() => loadFavorites());
+  document.addEventListener("click", onOutsideClick);
+});
 onUnmounted(() => document.removeEventListener("click", onOutsideClick));
 </script>
 
@@ -163,7 +152,7 @@ onUnmounted(() => document.removeEventListener("click", onOutsideClick));
 
         <div v-else-if="activePage === 'Visa recept'">
           <VisaRecept v-if="selectedRecipe" :recipe="selectedRecipe" @back="activePage = previousPage"
-            @delete="deleteRecipe" @toggle-favorite="toggleFav" />
+            @delete="deleteRecipe" @toggle-favorite="toggleFavorite" />
           <div v-else
             class="mx-auto max-w-[600px] rounded-xl border border-dashed border-[#deddd9] bg-white p-12 text-center text-gray-500">
             <h2 class="text-lg font-bold text-[#1a1a1a]">Inget recept valt</h2>
@@ -174,7 +163,7 @@ onUnmounted(() => document.removeEventListener("click", onOutsideClick));
         </div>
 
         <Recipes v-else :search="search" :active-page="activePage" :recipes="filteredRecipes"
-          @select-recipe="selectRecipe" @delete-recipe="deleteRecipe" @toggle-favorite="toggleFav" />
+          @select-recipe="selectRecipe" @delete-recipe="deleteRecipe" @toggle-favorite="toggleFavorite" />
       </main>
     </div>
   </div>
