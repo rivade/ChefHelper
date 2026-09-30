@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useAuth0 } from "@auth0/auth0-vue";
-import type { Recipe } from "../../types/recipe.ts"
+import type { Recipe } from "../../types/recipe.ts";
+
 const props = defineProps<{
     recipe: Recipe;
 }>();
+
 const { user, isAuthenticated } = useAuth0();
+
+// Kontrollerar om den inloggade användaren är skaparen av receptet
 const isRecipeAuthor = computed(
     () => isAuthenticated.value && user.value?.sub === props.recipe.author
 );
 
 const emit = defineEmits<{
     back: [];
+    edit: [];
     delete: [id: string];
     "toggle-favorite": [id: string];
 }>();
@@ -24,7 +29,6 @@ const difficultyLabel = computed(() => {
         if (props.recipe.difficulty === 2) return "Medel";
         if (props.recipe.difficulty === 3) return "Komplex";
     }
-    // Tar bort "1 - ", "2 - ", "3 - " om det finns i strängen
     return String(props.recipe.difficulty || "").replace(/^[0-9]\s*-\s*/, "");
 });
 
@@ -42,6 +46,7 @@ function handleDelete() {
 
 <template>
     <div class="mx-auto max-w-[1000px] rounded-xl bg-white p-5 shadow-sm sm:p-8 font-['Roboto'] text-[#1a1a1a]">
+        <!-- Header / Navigationsfält -->
         <div class="mb-6 flex items-center justify-between border-b border-[#deddd9] pb-4">
             <button type="button" @click="emit('back')"
                 class="flex items-center gap-2 rounded-[9px] border border-[#d0cfcc] px-4 py-2 text-xs font-semibold text-[#6b6b6b] transition hover:bg-black/5 sm:text-sm">
@@ -49,6 +54,7 @@ function handleDelete() {
             </button>
 
             <div class="flex items-center gap-3">
+                <!-- FAVORIT-KNAPP -->
                 <button type="button" @click="emit('toggle-favorite', recipe.id)"
                     class="flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f1f0] text-lg transition hover:scale-110"
                     :title="recipe.isFavorite ? 'Ta bort från favoriter' : 'Lägg till i favoriter'">
@@ -56,6 +62,13 @@ function handleDelete() {
                     <span v-else class="grayscale opacity-60 hover:opacity-100">🤍</span>
                 </button>
 
+                <!-- REDIGERA-KNAPP (Visas endast för författaren) -->
+                <button v-if="isRecipeAuthor" type="button" @click="emit('edit')"
+                    class="rounded-[9px] bg-[#b4895e] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#966f48] sm:text-sm">
+                    Redigera recept
+                </button>
+
+                <!-- TA BORT-KNAPP (Visas endast för författaren) -->
                 <button v-if="isRecipeAuthor" type="button" @click="handleDelete"
                     class="rounded-[9px] bg-[#b42318] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#911c13] sm:text-sm">
                     Ta bort recept
@@ -63,6 +76,7 @@ function handleDelete() {
             </div>
         </div>
 
+        <!-- Huvudinnehåll (Bild & Detaljer) -->
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
             <img :src="recipe.image || fallbackImage" :alt="recipe.title" @error="handleImageError"
                 :style="{ objectPosition: recipe.imagePosition || 'center' }"
@@ -86,6 +100,7 @@ function handleDelete() {
             </div>
         </div>
 
+        <!-- Ingredienser & Instruktioner -->
         <div class="mt-8 grid grid-cols-1 gap-8 border-t border-[#deddd9] pt-8 md:grid-cols-2">
             <div>
                 <h2 class="mb-4 text-lg font-bold">Ingredienser</h2>
