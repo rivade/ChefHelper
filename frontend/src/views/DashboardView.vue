@@ -4,8 +4,9 @@ import Recipes from "@/components/dashboard/Recipes.vue";
 import NavBar from "@/components/dashboard/Navbar.vue";
 import SkapaRecept, { type RecipePayload } from "@/components/dashboard/SkapaRecept.vue";
 import VisaRecept from "@/components/dashboard/VisaRecept.vue";
+import EditRecipe from "@/components/dashboard/EditRecepie.vue";
 import type { Recipe } from "../types/recipe.ts";
-import { useRecipeHandler, publicRecipes, userRecipes } from "@/RecipeHandler.ts";
+import { useRecipeHandler, loadPublicRecipes, publicRecipes, userRecipes } from "@/RecipeHandler.ts";
 
 type ComplexityFilter = "Alla" | "1 - Lätt" | "2 - Medel" | "3 - Komplex";
 
@@ -17,15 +18,20 @@ const selectedComplexity = ref<ComplexityFilter>("Alla");
 const isFilterOpen = ref(false);
 const filterRef = ref<HTMLElement | null>(null);
 const defaultImg = "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop";
+
 const {
   postRecipePublic,
   postRecipePrivate,
+  updateRecipe,
   deleteRecipe: deleteRecipeFromApi,
   loadPrivateRecipes,
   loadFavorites,
   toggleFavorite,
 } = useRecipeHandler();
 
+const isDetailOrFormView = computed(() =>
+  ["Skapa Recept", "Visa recept", "Redigera recept"].includes(activePage.value)
+);
 
 const mapDiff = (d: number) => {
   if (d === 1) return "Lätt";
@@ -40,20 +46,20 @@ const filteredRecipes = computed(() => {
     : publicRecipes.value;
 
   return recipes.filter((r) => {
-  const q = search.value.toLowerCase().trim();
-  const matchSearch = !q || r.title?.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q);
+    const q = search.value.toLowerCase().trim();
+    const matchSearch = !q || r.title?.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q);
 
-  if (selectedComplexity.value === "Alla") return matchSearch;
+    if (selectedComplexity.value === "Alla") return matchSearch;
 
-  // Jämför ren text ("lätt", "medel", "komplex") oavsett om filtret har "1 - " framför
-  const selectedClean = selectedComplexity.value.toLowerCase().replace(/^[0-9]\s*-\s*/, "");
-  const diffClean = String(r.difficulty).toLowerCase().replace(/^[0-9]\s*-\s*/, "");
+    const selectedClean = selectedComplexity.value.toLowerCase().replace(/^[0-9]\s*-\s*/, "");
+    const diffClean = String(r.difficulty).toLowerCase().replace(/^[0-9]\s*-\s*/, "");
 
-  return matchSearch && (diffClean === selectedClean);
+    return matchSearch && diffClean === selectedClean;
   });
 });
 
-const formatTime = (h: number, m: number) => [h > 0 && `${h} tim`, (m > 0 || !h) && `${m} min`].filter(Boolean).join(" ");
+const formatTime = (h: number, m: number) =>
+  [h > 0 && `${h} tim`, (m > 0 || !h) && `${m} min`].filter(Boolean).join(" ");
 
 async function handleRecipeSaved(p: RecipePayload, privateRecipe: boolean) {
   const recipe: Omit<Recipe, "id" | "author"> = {
@@ -78,6 +84,35 @@ async function handleRecipeSaved(p: RecipePayload, privateRecipe: boolean) {
   activePage.value = "Visa recept";
 }
 
+// Sparar i MongoDB via updateRecipe i RecipeHandler.ts
+async function handleRecipeUpdated(updatedRecipe: Recipe) {
+  const isPrivate = userRecipes.value.some((r) => r.id === updatedRecipe.id);
+
+  // Tillfällig lösning för att RecipeHandler.ts ska hitta receptet i userRecipes
+  const existsInUser = userRecipes.value.some((r) => r.id === updatedRecipe.id);
+  if (!existsInUser) {
+    userRecipes.value.push(updatedRecipe);
+  }
+
+  // Anropar backend via PATCH
+  const success = await updateRecipe(updatedRecipe.id, updatedRecipe, isPrivate);
+
+  // LÄGG TILL DETTA: Om sparandet misslyckades i backend, avbryt så att vi inte städar bort något i onödan
+  if (success === false) return;
+
+  // Städa och uppdatera publik lista
+  if (!isPrivate) {
+    userRecipes.value = userRecipes.value.filter((r) => r.id !== updatedRecipe.id);
+    const pubIndex = publicRecipes.value.findIndex((r) => r.id === updatedRecipe.id);
+    if (pubIndex !== -1) {
+      publicRecipes.value[pubIndex] = updatedRecipe;
+    }
+  }
+
+  selectedRecipe.value = updatedRecipe;
+  activePage.value = "Visa recept";
+}
+
 function selectRecipe(r: Recipe) {
   if (activePage.value !== "Visa recept") previousPage.value = activePage.value;
   selectedRecipe.value = r;
@@ -85,7 +120,7 @@ function selectRecipe(r: Recipe) {
 }
 
 async function deleteRecipe(id: string) {
-  const isPrivate = userRecipes.value.some(recipe => recipe.id === id);
+  const isPrivate = userRecipes.value.some((recipe) => recipe.id === id);
   const deleted = await deleteRecipeFromApi(id, isPrivate);
   if (!deleted) return;
 
@@ -100,21 +135,23 @@ const onOutsideClick = (e: MouseEvent) => {
 };
 
 onMounted(() => {
+  void loadPublicRecipes();
   void loadPrivateRecipes().then(() => loadFavorites());
   document.addEventListener("click", onOutsideClick);
 });
+
 onUnmounted(() => document.removeEventListener("click", onOutsideClick));
 </script>
 
 <template>
   <div class="min-h-[calc(100vh-74px)] font-['Roboto'] text-[#1a1a1a]"
-    :class="['Skapa Recept', 'Visa recept'].includes(activePage) ? 'bg-[#f1f1f0]' : 'bg-[#dfa06094]'">
+    :class="isDetailOrFormView ? 'bg-[#f1f1f0]' : 'bg-[#dfa06094]'">
     <div class="grid min-h-[calc(100vh-74px)] grid-cols-1 lg:grid-cols-[218px_1fr]">
       <NavBar v-model:active-page="activePage" />
 
       <main class="min-w-0 p-4 sm:p-5 lg:p-[34px_30px_48px]">
         <!-- Sök & Filter -->
-        <section v-if="!['Skapa Recept', 'Visa recept'].includes(activePage)"
+        <section v-if="!isDetailOrFormView"
           class="relative z-10 mb-8 flex flex-col gap-3 sm:mb-10 sm:flex-row sm:items-center sm:justify-center">
           <div ref="filterRef" class="relative z-20 w-full sm:absolute sm:left-0 sm:w-auto">
             <button type="button" @click.stop="isFilterOpen = !isFilterOpen"
@@ -146,22 +183,30 @@ onUnmounted(() => document.removeEventListener("click", onOutsideClick));
           </label>
         </section>
 
-        <!-- Views -->
+        <!-- Skapa Recept -->
         <SkapaRecept v-if="activePage === 'Skapa Recept'" @cancel="activePage = previousPage"
           @saved="handleRecipeSaved" />
 
+        <!-- Visa recept -->
         <div v-else-if="activePage === 'Visa recept'">
           <VisaRecept v-if="selectedRecipe" :recipe="selectedRecipe" @back="activePage = previousPage"
-            @delete="deleteRecipe" @toggle-favorite="toggleFavorite" />
+            @edit="activePage = 'Redigera recept'" @delete="deleteRecipe" @toggle-favorite="toggleFavorite" />
           <div v-else
             class="mx-auto max-w-[600px] rounded-xl border border-dashed border-[#deddd9] bg-white p-12 text-center text-gray-500">
             <h2 class="text-lg font-bold text-[#1a1a1a]">Inget recept valt</h2>
             <p class="mt-2 text-sm">Välj ett recept från listan för att visa detaljerna här.</p>
             <button type="button" @click="activePage = previousPage"
-              class="mt-4 rounded-[9px] bg-[#b89a72] px-4 py-2 text-xs font-semibold text-white hover:bg-[#a7875f]">Tillbaka</button>
+              class="mt-4 rounded-[9px] bg-[#b89a72] px-4 py-2 text-xs font-semibold text-white hover:bg-[#a7875f]">
+              Tillbaka
+            </button>
           </div>
         </div>
 
+        <!-- Redigera recept -->
+        <EditRecipe v-else-if="activePage === 'Redigera recept' && selectedRecipe" :recipe="selectedRecipe"
+          @cancel="activePage = 'Visa recept'" @updated="handleRecipeUpdated" />
+
+        <!-- Receptlista -->
         <Recipes v-else :search="search" :active-page="activePage" :recipes="filteredRecipes"
           @select-recipe="selectRecipe" @delete-recipe="deleteRecipe" @toggle-favorite="toggleFavorite" />
       </main>

@@ -14,7 +14,7 @@ type FavoriteInfo = {
     isFavorite: boolean;
 };
 
-export async function loadPublicRecipes() {
+export async function loadPublicRecipes(options: { silent?: boolean } = {}): Promise<boolean> {
     try {
         const response = await fetch(API_URL);
         if (!response.ok) {
@@ -27,8 +27,10 @@ export async function loadPublicRecipes() {
         }
 
         publicRecipes.value = recipes as Recipe[];
-    } catch (error) {
-        alert('Kunde inte ladda in recept');
+        return true;
+    } catch {
+        if (!options.silent) alert('Kunde inte ladda in recept');
+        return false;
     }
 }
 
@@ -114,34 +116,44 @@ export function useRecipeHandler() {
         }
     }
 
-    async function updateRecipe(id: string, newRecipe: Recipe, isPrivate: boolean) {
+    async function updateRecipe(id: string, newRecipe: Recipe, isPrivate: boolean): Promise<boolean> {
         try {
-            const recipe = userRecipes.value.find(p => p.id === id);
-            if (!recipe) return;
-
             const userId = encodeURIComponent(getUserId());
             const recipeId = encodeURIComponent(id);
             const url = isPrivate
                 ? `${API_URL}/private/${userId}/${recipeId}`
                 : `${API_URL}/${userId}/${recipeId}`;
 
+            // Rensa metadata om det finns innan vi skickar till backend
+            const { id: _id, author: _author, isFavorite: _fav, ...payload } = newRecipe as Record<string, unknown>;
+
             const response = await fetch(url, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(newRecipe)
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
                 throw new Error(`Request failed: ${response.status}`);
             }
 
-            userRecipes.value = userRecipes.value.map(existing =>
-                existing.id === id ? newRecipe : existing
-            );
+            // Uppdatera rätt reaktiv lista i frontend (exakt som vid radering)
+            if (isPrivate) {
+                userRecipes.value = userRecipes.value.map(recipe =>
+                    recipe.id === id ? newRecipe : recipe
+                );
+            } else {
+                publicRecipes.value = publicRecipes.value.map(recipe =>
+                    recipe.id === id ? newRecipe : recipe
+                );
+            }
+
+            return true;
         } catch {
             alert('Kunde inte spara ändring');
+            return false;
         }
     }
 
