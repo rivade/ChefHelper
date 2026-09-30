@@ -22,6 +22,8 @@ const {
   postRecipePrivate,
   deleteRecipe: deleteRecipeFromApi,
   loadPrivateRecipes,
+  loadFavorites,
+  toggleFavorite,
 } = useRecipeHandler();
 
 
@@ -33,7 +35,7 @@ const mapDiff = (d: number) => {
 };
 
 const filteredRecipes = computed(() => {
-  const recipes = activePage.value === "Mina recept"
+  const recipes = ["Mina recept", "Favoriter"].includes(activePage.value)
     ? [...publicRecipes.value, ...userRecipes.value]
     : publicRecipes.value;
 
@@ -52,11 +54,6 @@ const filteredRecipes = computed(() => {
 });
 
 const formatTime = (h: number, m: number) => [h > 0 && `${h} tim`, (m > 0 || !h) && `${m} min`].filter(Boolean).join(" ");
-
-const toggleFav = (id: string) => {
-  const r = publicRecipes.value.find(x => x.id === id);
-  if (r) r.isFavorite = !r.isFavorite;
-};
 
 async function handleRecipeSaved(p: RecipePayload, privateRecipe: boolean) {
   const recipe: Omit<Recipe, "id" | "author"> = {
@@ -103,7 +100,7 @@ const onOutsideClick = (e: MouseEvent) => {
 };
 
 onMounted(() => {
-  void loadPrivateRecipes();
+  void loadPrivateRecipes().then(() => loadFavorites());
   document.addEventListener("click", onOutsideClick);
 });
 onUnmounted(() => document.removeEventListener("click", onOutsideClick));
@@ -155,7 +152,7 @@ onUnmounted(() => document.removeEventListener("click", onOutsideClick));
 
         <div v-else-if="activePage === 'Visa recept'">
           <VisaRecept v-if="selectedRecipe" :recipe="selectedRecipe" @back="activePage = previousPage"
-            @delete="deleteRecipe" @toggle-favorite="toggleFav" />
+            @delete="deleteRecipe" @toggle-favorite="toggleFavorite" />
           <div v-else
             class="mx-auto max-w-[600px] rounded-xl border border-dashed border-[#deddd9] bg-white p-12 text-center text-gray-500">
             <h2 class="text-lg font-bold text-[#1a1a1a]">Inget recept valt</h2>
@@ -166,7 +163,7 @@ onUnmounted(() => document.removeEventListener("click", onOutsideClick));
         </div>
 
         <Recipes v-else :search="search" :active-page="activePage" :recipes="filteredRecipes"
-          @select-recipe="selectRecipe" @delete-recipe="deleteRecipe" @toggle-favorite="toggleFav" />
+          @select-recipe="selectRecipe" @delete-recipe="deleteRecipe" @toggle-favorite="toggleFavorite" />
       </main>
     </div>
   </div>

@@ -6,6 +6,13 @@ export const publicRecipes = ref<Recipe[]>([]);
 export const userRecipes = ref<Recipe[]>([]);
 
 const API_URL = 'http://localhost:8001/api/recipes'
+const FAVORITES_URL = 'http://localhost:8001/api/favorites'
+
+type FavoriteInfo = {
+    recipeId: string;
+    userId: string;
+    isFavorite: boolean;
+};
 
 export async function loadPublicRecipes() {
     try {
@@ -163,5 +170,55 @@ export function useRecipeHandler() {
         }
     }
 
-    return { postRecipePublic, postRecipePrivate, updateRecipe, deleteRecipe, loadPrivateRecipes, getUserId };
+    async function loadFavorites(): Promise<void> {
+        try {
+            const userId = encodeURIComponent(getUserId());
+            const response = await fetch(`${FAVORITES_URL}/${userId}`);
+            if (!response.ok) {
+                throw new Error(`Request failed: ${response.status}`);
+            }
+
+            const favorites: unknown = await response.json();
+            if (!Array.isArray(favorites)) {
+                throw new Error('Unexpected favorites response');
+            }
+
+            const favoriteIds = new Set((favorites as Recipe[]).map(r => r.id));
+            publicRecipes.value = publicRecipes.value.map(r => ({ ...r, isFavorite: favoriteIds.has(r.id) }));
+            userRecipes.value = userRecipes.value.map(r => ({ ...r, isFavorite: favoriteIds.has(r.id) }));
+        } catch {
+            // User may not be authenticated yet or has no favorites; ignore silently.
+        }
+    }
+
+    async function toggleFavorite(id: string): Promise<void> {
+        try {
+            const userId = encodeURIComponent(getUserId());
+            const recipeId = encodeURIComponent(id);
+            const recipe = publicRecipes.value.find(r => r.id === id) ?? userRecipes.value.find(r => r.id === id);
+            const method = recipe?.isFavorite ? 'DELETE' : 'POST';
+
+            const response = await fetch(`${FAVORITES_URL}/${userId}/${recipeId}`, { method });
+            if (!response.ok) {
+                throw new Error(`Request failed: ${response.status}`);
+            }
+
+            const info = await response.json() as FavoriteInfo;
+            publicRecipes.value = publicRecipes.value.map(r => r.id === id ? { ...r, isFavorite: info.isFavorite } : r);
+            userRecipes.value = userRecipes.value.map(r => r.id === id ? { ...r, isFavorite: info.isFavorite } : r);
+        } catch {
+            alert('Kunde inte uppdatera favorit');
+        }
+    }
+
+    return {
+        postRecipePublic,
+        postRecipePrivate,
+        updateRecipe,
+        deleteRecipe,
+        loadPrivateRecipes,
+        loadFavorites,
+        toggleFavorite,
+        getUserId,
+    };
 }
