@@ -1,6 +1,7 @@
+import base64
 import os
 import pymongo
-from bson import ObjectId
+from bson import Binary, ObjectId
 from dotenv import load_dotenv
 from pymongo import ReturnDocument
 from pymongo.server_api import ServerApi
@@ -32,22 +33,42 @@ def test_connection():
 
     print(client.list_database_names())
 
-#Public-------------------------------------------------------------------
-def _serialize_recipe(recipe):
-    return {
+def serialize_recipe(recipe):
+    serialized = {
         "id": str(recipe["_id"]),
-        **{key: value for key, value in recipe.items() if key != "_id"},
+        **{key: value for key, value in recipe.items() if key not in {"_id", "imageMimeType"}},
     }
+    image = recipe.get("image")
+    if isinstance(image, bytes):
+        content_type = recipe.get("imageMimeType", "image/jpeg")
+        serialized["image"] = f"data:{content_type};base64,{base64.b64encode(image).decode('ascii')}"
+    return serialized
+
+
+def prepare_recipe_image(recipe):
+    image = recipe.get("image")
+    if not isinstance(image, str) or not image.startswith("data:image/"):
+        return recipe
+
+    header, _, encoded_image = image.partition(",")
+    content_type = header[5:].split(";", 1)[0]
+    return {
+        **recipe,
+        "image": Binary(base64.b64decode(encoded_image, validate=True)),
+        "imageMimeType": content_type,
+    }
+#Public-------------------------------------------------------------------
 
 
 def get_recipes_public():
-    return [_serialize_recipe(recipe) for recipe in publiccollection.find()]
+    return [serialize_recipe(recipe) for recipe in publiccollection.find()]
 
 
 def post_recipe_public(recipe, user_id):
+    recipe = prepare_recipe_image(recipe)
     recipe = {**recipe, "author": user_id}
     result = publiccollection.insert_one(recipe.copy())
-    return _serialize_recipe({"_id": result.inserted_id, **recipe})
+    return serialize_recipe({"_id": result.inserted_id, **recipe})
 
 def patch_recipe_public(recipe_id, updates, user_id):
     if not ObjectId.is_valid(recipe_id):
@@ -61,7 +82,7 @@ def patch_recipe_public(recipe_id, updates, user_id):
     if updated_recipe is None:
         return None
 
-    return _serialize_recipe(updated_recipe)
+    return serialize_recipe(updated_recipe)
 
 def delete_recipe_public(recipe_id):
     result = publiccollection.delete_one({"_id": ObjectId(recipe_id)})
@@ -70,13 +91,14 @@ def delete_recipe_public(recipe_id):
 #Private--------------------------------------------------------------------
 def get_recipes_private(user_id):
     privatecollection = db[f"private-{user_id}"]
-    return [_serialize_recipe(recipe) for recipe in privatecollection.find()]
+    return [serialize_recipe(recipe) for recipe in privatecollection.find()]
 
 def post_recipe_private(recipe, user_id):
     privatecollection = db[f"private-{user_id}"]
+    recipe = prepare_recipe_image(recipe)
     recipe = {**recipe, "author": user_id}
     result = privatecollection.insert_one(recipe.copy())
-    return _serialize_recipe({"_id": result.inserted_id, **recipe})
+    return serialize_recipe({"_id": result.inserted_id, **recipe})
 
 def patch_recipe_private(recipe_id, updates, user_id):
     if not ObjectId.is_valid(recipe_id):
@@ -91,7 +113,7 @@ def patch_recipe_private(recipe_id, updates, user_id):
     if updated_recipe is None:
         return None
 
-    return _serialize_recipe(updated_recipe)
+    return serialize_recipe(updated_recipe)
 
 def delete_recipe_private(recipe_id, user_id):
     privatecollection = db[f"private-{user_id}"]
@@ -212,7 +234,7 @@ def get_favorite_recipes(user_id):
     }
 
     return [
-        _serialize_recipe({
+        serialize_recipe({
             **recipes_by_id[recipe_id],
             "isFavorite": True,
         })

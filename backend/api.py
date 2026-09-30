@@ -1,3 +1,5 @@
+import base64
+import binascii
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +21,23 @@ class RecipeCreate(BaseModel):
     ingredients: str = Field(min_length=1)
     instructions: str | None = Field(default=None, min_length=1)
     isUserCreated: bool | None = None
+
+    @field_validator("image")
+    @classmethod
+    def validate_image_data_url(cls, image: str) -> str:
+        if not image.startswith("data:"):
+            return image
+
+        header, separator, encoded_image = image.partition(",")
+        if not separator or not header.startswith("data:image/") or not header.endswith(";base64"):
+            raise ValueError("Image must be a base64-encoded image data URL")
+
+        try:
+            base64.b64decode(encoded_image, validate=True)
+        except (binascii.Error, ValueError) as error:
+            raise ValueError("Image data URL contains invalid base64 data") from error
+
+        return image
 
 
 class RecipePatch(BaseModel):
@@ -147,5 +166,7 @@ def init():
         if favorite is None:
             raise HTTPException(status_code=404, detail="Recipe not found")
         return favorite
+
+    #Images
 
     return app
