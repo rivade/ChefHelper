@@ -36,6 +36,10 @@ class RecipePatch(BaseModel):
     instructions: str | None = Field(default=None, min_length=1)
     isUserCreated: bool | None = None
 
+class FavoriteInfo(BaseModel):
+    recipeId: str
+    userId: str
+    isFavorite: bool
 
 def init():
     app = FastAPI(title="ChefHelper API")
@@ -121,5 +125,27 @@ def init():
     def delete_recipe_private(recipe_id: str, user_id: str):
         """Delete a private recipe by its ID"""
         return mongo.delete_recipe_private(recipe_id, user_id)
+
+    #Favorite--------------------------------------------------------------------------
+    @app.get("/api/favorites/{user_id}")
+    def get_favorite_recipes(user_id: str):
+        """Retrieve a user's favorite public recipes"""
+        return mongo.get_favorite_recipes(user_id)
+
+    @app.post("/api/favorites/{user_id}/{recipe_id}", response_model=FavoriteInfo)
+    def favorite_recipe(user_id: str, recipe_id: str):
+        """Add a public recipe to a user's favorites"""
+        favorite = mongo.favorite_recipe(recipe_id, user_id)
+        if favorite is None:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        return favorite
+
+    @app.delete("/api/favorites/{user_id}/{recipe_id}", response_model=FavoriteInfo)
+    def unfavorite_recipe(user_id: str, recipe_id: str):
+        """Remove a public recipe from a user's favorites"""
+        favorite = mongo.unfavorite_recipe(recipe_id, user_id)
+        if favorite is None:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        return favorite
 
     return app
