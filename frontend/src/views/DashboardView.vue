@@ -94,7 +94,10 @@ const onOutsideClick = (e: MouseEvent) => {
   if (filterRef.value && !filterRef.value.contains(e.target as Node)) isFilterOpen.value = false;
 };
 
-onMounted(() => document.addEventListener("click", onOutsideClick));
+onMounted(() => {
+  void loadPrivateRecipes();
+  document.addEventListener("click", onOutsideClick);
+});
 onUnmounted(() => document.removeEventListener("click", onOutsideClick));
 </script>
 
