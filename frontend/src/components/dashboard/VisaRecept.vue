@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useAuth0 } from "@auth0/auth0-vue";
 import type { Recipe } from "../../types/recipe.ts"
 const props = defineProps<{
     recipe: Recipe;
 }>();
+const { user, isAuthenticated } = useAuth0();
+const isRecipeAuthor = computed(
+    () => isAuthenticated.value && user.value?.sub === props.recipe.author
+);
 
 const emit = defineEmits<{
     back: [];
@@ -51,7 +56,7 @@ function handleDelete() {
                     <span v-else class="grayscale opacity-60 hover:opacity-100">🤍</span>
                 </button>
 
-                <button v-if="recipe.isUserCreated" type="button" @click="handleDelete"
+                <button v-if="isRecipeAuthor" type="button" @click="handleDelete"
                     class="rounded-[9px] bg-[#b42318] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#911c13] sm:text-sm">
                     Ta bort recept
                 </button>

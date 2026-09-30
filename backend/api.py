@@ -19,7 +19,6 @@ class RecipeCreate(BaseModel):
     ingredients: str = Field(min_length=1)
     instructions: str | None = Field(default=None, min_length=1)
     isUserCreated: bool | None = None
-    isFavorite: bool | None = None
 
 
 class RecipePatch(BaseModel):
@@ -36,7 +35,6 @@ class RecipePatch(BaseModel):
     ingredients: str | None = Field(default=None, min_length=1)
     instructions: str | None = Field(default=None, min_length=1)
     isUserCreated: bool | None = None
-    isFavorite: bool | None = None
 
 
 def init():

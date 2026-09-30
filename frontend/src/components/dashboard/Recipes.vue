@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useAuth0 } from "@auth0/auth0-vue";
 import type { Recipe } from "../../types/recipe.ts";
 
 const props = defineProps<{
@@ -14,6 +15,10 @@ const emit = defineEmits<{
     "toggle-favorite": [id: string];
 }>();
 
+const { user, isAuthenticated } = useAuth0();
+const isRecipeAuthor = (recipe: Recipe) =>
+    isAuthenticated.value && user.value?.sub === recipe.author;
+
 const fallbackImage = "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop";
 
 function handleImageError(event: Event) {
@@ -27,13 +32,13 @@ const filteredRecipes = computed(() => {
     if (props.activePage === "Favoriter") {
         list = list.filter((r) => r.isFavorite);
     } else if (props.activePage === "Mina recept") {
-        list = list.filter((r) => r.isUserCreated);
+        list = list.filter(isRecipeAuthor);
     }
 
     if (props.search.trim()) {
         const q = props.search.toLowerCase();
         list = list.filter(
-            (r) => r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q)
+            (r) => r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || r.ingredients.toLowerCase().includes(q)
         );
     }
 
@@ -84,7 +89,7 @@ const filteredRecipes = computed(() => {
                         Visa recept
                     </button>
 
-                    <button v-if="recipe.isUserCreated" type="button" @click="emit('delete-recipe', recipe.id)"
+                    <button v-if="isRecipeAuthor(recipe)" type="button" @click="emit('delete-recipe', recipe.id)"
                         class="text-xs text-red-600 transition hover:underline">
                         Ta bort
                     </button>

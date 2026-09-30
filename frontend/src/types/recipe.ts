@@ -10,6 +10,5 @@ export type Recipe = {
     ingredients: string;
     author: string;
     instructions?: string;
-    isUserCreated?: boolean;
     isFavorite?: boolean;
 };

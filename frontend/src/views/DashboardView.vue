@@ -5,7 +5,7 @@ import NavBar from "@/components/dashboard/Navbar.vue";
 import SkapaRecept, { type RecipePayload } from "@/components/dashboard/SkapaRecept.vue";
 import VisaRecept from "@/components/dashboard/VisaRecept.vue";
 import type { Recipe } from "../types/recipe.ts";
-import { useRecipeHandler, publicRecipes } from "@/RecipeHandler.ts";
+import { useRecipeHandler, publicRecipes, userRecipes } from "@/RecipeHandler.ts";
 
 type ComplexityFilter = "Alla" | "1 - Lätt" | "2 - Medel" | "3 - Komplex";
 
@@ -17,7 +17,7 @@ const selectedComplexity = ref<ComplexityFilter>("Alla");
 const isFilterOpen = ref(false);
 const filterRef = ref<HTMLElement | null>(null);
 const defaultImg = "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop";
-const { postRecipePublic } = useRecipeHandler();
+const { postRecipePublic, postRecipePrivate, loadPrivateRecipes } = useRecipeHandler();
 
 
 const mapDiff = (d: number) => {
@@ -27,7 +27,12 @@ const mapDiff = (d: number) => {
   return "Lätt";
 };
 
-const filteredRecipes = computed(() => publicRecipes.value.filter((r) => {
+const filteredRecipes = computed(() => {
+  const recipes = activePage.value === "Mina recept"
+    ? [...publicRecipes.value, ...userRecipes.value]
+    : publicRecipes.value;
+
+  return recipes.filter((r) => {
   const q = search.value.toLowerCase().trim();
   const matchSearch = !q || r.title?.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q);
 
@@ -38,7 +43,8 @@ const filteredRecipes = computed(() => publicRecipes.value.filter((r) => {
   const diffClean = String(r.difficulty).toLowerCase().replace(/^[0-9]\s*-\s*/, "");
 
   return matchSearch && (diffClean === selectedClean);
-}));
+  });
+});
 
 const formatTime = (h: number, m: number) => [h > 0 && `${h} tim`, (m > 0 || !h) && `${m} min`].filter(Boolean).join(" ");
 
@@ -47,7 +53,7 @@ const toggleFav = (id: string) => {
   if (r) r.isFavorite = !r.isFavorite;
 };
 
-async function handleRecipeSaved(p: RecipePayload) {
+async function handleRecipeSaved(p: RecipePayload, privateRecipe: boolean) {
   const recipe: Omit<Recipe, "id" | "author"> = {
     title: p.title,
     description: p.description,
@@ -58,10 +64,11 @@ async function handleRecipeSaved(p: RecipePayload) {
     servings: `${p.portions} portioner`,
     ingredients: p.ingredients,
     instructions: p.instructions,
-    isUserCreated: true,
-    isFavorite: false
   };
-  const savedRecipe = await postRecipePublic(recipe);
+
+  const savedRecipe: Recipe | null = privateRecipe
+    ? await postRecipePrivate(recipe)
+    : await postRecipePublic(recipe);
   if (!savedRecipe) return;
 
   selectedRecipe.value = savedRecipe;

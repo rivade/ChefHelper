@@ -25,8 +25,6 @@ export async function loadPublicRecipes() {
     }
 }
 
-
-
 export function useRecipeHandler() {
     const { user, isAuthenticated } = useAuth0();
 
@@ -36,6 +34,25 @@ export function useRecipeHandler() {
             throw new Error('User is not authenticated');
         }
         return userId;
+    }
+
+    async function loadPrivateRecipes(): Promise<void> {
+        try {
+            const userId = encodeURIComponent(getUserId());
+            const response = await fetch(`${API_URL}/private/${userId}`);
+            if (!response.ok) {
+                throw new Error(`Request failed: ${response.status}`);
+            }
+
+            const recipes: unknown = await response.json();
+            if (!Array.isArray(recipes)) {
+                throw new Error('Unexpected recipes response');
+            }
+
+            userRecipes.value = recipes as Recipe[];
+        } catch {
+            alert('Kunde inte ladda in dina recept');
+        }
     }
 
     async function postRecipePublic(
@@ -64,7 +81,9 @@ export function useRecipeHandler() {
         }
     }
 
-    async function postRecipePrivate(recipe: Recipe) {
+    async function postRecipePrivate(
+        recipe: Omit<Recipe, "id" | "author">
+    ): Promise<Recipe | null> {
         try {
             const userId = encodeURIComponent(getUserId());
             const response = await fetch(`${API_URL}/private/${userId}`, {
@@ -79,9 +98,12 @@ export function useRecipeHandler() {
                 throw new Error(`Request failed: ${response.status}`);
             }
 
-            userRecipes.value = [...userRecipes.value, recipe];
+            const savedRecipe = await response.json() as Recipe;
+            userRecipes.value = [...userRecipes.value, savedRecipe];
+            return savedRecipe;
         } catch {
             alert('Kunde inte spara recept');
+            return null;
         }
     }
 
@@ -116,5 +138,5 @@ export function useRecipeHandler() {
         }
     }
 
-    return { postRecipePublic, postRecipePrivate, updateRecipe, getUserId };
+    return { postRecipePublic, postRecipePrivate, updateRecipe, loadPrivateRecipes, getUserId };
 }
