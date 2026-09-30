@@ -15,6 +15,7 @@ const badgeStyle = "grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[#b48
 const form = reactive({ title: "", description: "", cookingHours: "", cookingMinutes: "", portions: "", difficulty: 1, ingredients: "", instructions: "" });
 const submitted = ref(false), isDifficultyOpen = ref(false), showUploadModal = ref(false), isDraggingFile = ref(false), isDraggingFocus = ref(false);
 const selectedImage = ref(""), imagePosition = ref("50% 50%"), focusPoint = ref({ x: 50, y: 50 });
+const selectedFile = ref<File | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null), imageContainerRef = ref<HTMLElement | null>(null);
 
 const difficultyOptions = [{ value: 1, label: "1 - Lätt" }, { value: 2, label: "2 - Medel" }, { value: 3, label: "3 - Komplex" }];
@@ -50,7 +51,9 @@ const handleFormSubmit = () => { submitted.value = true; if (canSave.value) show
 const processFile = (file?: File) => {
     if (!file) return;
     if (file.type.startsWith("image/")) {
+        if (selectedImage.value) URL.revokeObjectURL(selectedImage.value);
         selectedImage.value = URL.createObjectURL(file);
+        selectedFile.value = file;
         imagePosition.value = "50% 50%";
         focusPoint.value = { x: 50, y: 50 };
     } else alert("Vänligen välj en giltig bildfil.");
@@ -60,7 +63,9 @@ const handleFileSelect = (e: Event) => processFile((e.target as HTMLInputElement
 const handleDrop = (e: DragEvent) => { isDraggingFile.value = false; processFile(e.dataTransfer?.files?.[0]); };
 
 const resetImage = () => {
+    if (selectedImage.value) URL.revokeObjectURL(selectedImage.value);
     selectedImage.value = ""; imagePosition.value = "50% 50%"; focusPoint.value = { x: 50, y: 50 };
+    selectedFile.value = null;
     if (fileInputRef.value) fileInputRef.value.value = "";
 };
 
@@ -85,15 +90,32 @@ const stopFocusDrag = () => {
     window.removeEventListener("pointerup", stopFocusDrag);
 };
 
-onUnmounted(stopFocusDrag);
+onUnmounted(() => {
+    stopFocusDrag();
+    if (selectedImage.value) URL.revokeObjectURL(selectedImage.value);
+});
 
-const finalizeSave = (savePrivate: boolean) => {
-    showUploadModal.value = false;
-    emit("saved", {
-        title: form.title.trim(), description: form.description.trim(), ingredients: form.ingredients.trim(), instructions: form.instructions.trim(),
-        cookingtime: [hours.value, minutes.value], portions: portionsNum.value, difficulty: form.difficulty,
-        image: selectedImage.value?? "", imagePosition: imagePosition.value?? "50% 50%",
-    }, savePrivate);
+const readImageAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === "string"
+        ? resolve(reader.result)
+        : reject(new Error("Could not read image file"));
+    reader.onerror = () => reject(reader.error ?? new Error("Could not read image file"));
+    reader.readAsDataURL(file);
+});
+
+const finalizeSave = async (savePrivate: boolean) => {
+    try {
+        const image = selectedFile.value ? await readImageAsDataUrl(selectedFile.value) : "";
+        showUploadModal.value = false;
+        emit("saved", {
+            title: form.title.trim(), description: form.description.trim(), ingredients: form.ingredients.trim(), instructions: form.instructions.trim(),
+            cookingtime: [hours.value, minutes.value], portions: portionsNum.value, difficulty: form.difficulty,
+            image, imagePosition: imagePosition.value,
+        }, savePrivate);
+    } catch {
+        alert("Kunde inte läsa bildfilen.");
+    }
 };
 </script>
 
