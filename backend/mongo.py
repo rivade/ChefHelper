@@ -84,8 +84,14 @@ def patch_recipe_public(recipe_id, updates, user_id):
 
     return serialize_recipe(updated_recipe)
 
-def delete_recipe_public(recipe_id):
-    result = publiccollection.delete_one({"_id": ObjectId(recipe_id)})
+def delete_recipe_public(recipe_id, user_id):
+    if not ObjectId.is_valid(recipe_id):
+        return None
+
+    result = publiccollection.delete_one({"_id": ObjectId(recipe_id), "author": user_id})
+    if result.deleted_count == 0:
+        return None
+
     return {"deleted_count": result.deleted_count}
 
 #Private--------------------------------------------------------------------
@@ -116,8 +122,16 @@ def patch_recipe_private(recipe_id, updates, user_id):
     return serialize_recipe(updated_recipe)
 
 def delete_recipe_private(recipe_id, user_id):
+    if not ObjectId.is_valid(recipe_id):
+        return None
+
     privatecollection = db[f"private-{user_id}"]
-    result = privatecollection.delete_one({"_id": ObjectId(recipe_id)})
+    result = privatecollection.delete_one(
+        {"_id": ObjectId(recipe_id), "author": user_id}
+    )
+    if result.deleted_count == 0:
+        return None
+
     return {"deleted_count": result.deleted_count}
 
 #Favorite---------------------------------------------------------------------

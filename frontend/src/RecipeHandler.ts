@@ -35,20 +35,21 @@ export async function loadPublicRecipes(options: { silent?: boolean } = {}): Pro
 }
 
 export function useRecipeHandler() {
-    const { user, isAuthenticated } = useAuth0();
+    const { getAccessTokenSilently } = useAuth0();
 
-    function getUserId(): string {
-        const userId = user.value?.sub;
-        if (!isAuthenticated.value || !userId) {
-            throw new Error('User is not authenticated');
-        }
-        return userId;
+    async function authHeaders(json = false): Promise<Record<string, string>> {
+        const token = await getAccessTokenSilently();
+        return {
+            Authorization: `Bearer ${token}`,
+            ...(json ? { 'Content-Type': 'application/json' } : {}),
+        };
     }
 
     async function loadPrivateRecipes(): Promise<void> {
         try {
-            const userId = encodeURIComponent(getUserId());
-            const response = await fetch(`${API_URL}/private/${userId}`);
+            const response = await fetch(`${API_URL}/private`, {
+                headers: await authHeaders(),
+            });
             if (!response.ok) {
                 throw new Error(`Request failed: ${response.status}`);
             }
@@ -68,12 +69,9 @@ export function useRecipeHandler() {
         recipe: Omit<Recipe, "id" | "author">
     ): Promise<Recipe | null> {
         try {
-            const userId = encodeURIComponent(getUserId());
-            const response = await fetch(`${API_URL}/${userId}`, {
+            const response = await fetch(API_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: await authHeaders(true),
                 body: JSON.stringify(recipe)
             });
 
@@ -94,12 +92,9 @@ export function useRecipeHandler() {
         recipe: Omit<Recipe, "id" | "author">
     ): Promise<Recipe | null> {
         try {
-            const userId = encodeURIComponent(getUserId());
-            const response = await fetch(`${API_URL}/private/${userId}`, {
+            const response = await fetch(`${API_URL}/private`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: await authHeaders(true),
                 body: JSON.stringify(recipe)
             });
 
@@ -118,20 +113,17 @@ export function useRecipeHandler() {
 
     async function updateRecipe(id: string, newRecipe: Recipe, isPrivate: boolean): Promise<boolean> {
         try {
-            const userId = encodeURIComponent(getUserId());
             const recipeId = encodeURIComponent(id);
             const url = isPrivate
-                ? `${API_URL}/private/${userId}/${recipeId}`
-                : `${API_URL}/${userId}/${recipeId}`;
+                ? `${API_URL}/private/${recipeId}`
+                : `${API_URL}/${recipeId}`;
 
             // Rensa metadata om det finns innan vi skickar till backend
             const { id: _id, author: _author, isFavorite: _fav, ...payload } = newRecipe as Record<string, unknown>;
 
             const response = await fetch(url, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: await authHeaders(true),
                 body: JSON.stringify(payload)
             });
 
@@ -161,9 +153,12 @@ export function useRecipeHandler() {
         try {
             const recipeId = encodeURIComponent(id);
             const url = isPrivate
-                ? `${API_URL}/private/${encodeURIComponent(getUserId())}/${recipeId}`
+                ? `${API_URL}/private/${recipeId}`
                 : `${API_URL}/${recipeId}`;
-            const response = await fetch(url, { method: 'DELETE' });
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: await authHeaders(),
+            });
 
             if (!response.ok) {
                 throw new Error(`Request failed: ${response.status}`);
@@ -184,8 +179,9 @@ export function useRecipeHandler() {
 
     async function loadFavorites(): Promise<void> {
         try {
-            const userId = encodeURIComponent(getUserId());
-            const response = await fetch(`${FAVORITES_URL}/${userId}`);
+            const response = await fetch(FAVORITES_URL, {
+                headers: await authHeaders(),
+            });
             if (!response.ok) {
                 throw new Error(`Request failed: ${response.status}`);
             }
@@ -205,12 +201,14 @@ export function useRecipeHandler() {
 
     async function toggleFavorite(id: string): Promise<void> {
         try {
-            const userId = encodeURIComponent(getUserId());
             const recipeId = encodeURIComponent(id);
             const recipe = publicRecipes.value.find(r => r.id === id) ?? userRecipes.value.find(r => r.id === id);
             const method = recipe?.isFavorite ? 'DELETE' : 'POST';
 
-            const response = await fetch(`${FAVORITES_URL}/${userId}/${recipeId}`, { method });
+            const response = await fetch(`${FAVORITES_URL}/${recipeId}`, {
+                method,
+                headers: await authHeaders(),
+            });
             if (!response.ok) {
                 throw new Error(`Request failed: ${response.status}`);
             }
@@ -231,6 +229,5 @@ export function useRecipeHandler() {
         loadPrivateRecipes,
         loadFavorites,
         toggleFavorite,
-        getUserId,
     };
 }
