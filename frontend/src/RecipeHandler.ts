@@ -138,5 +138,30 @@ export function useRecipeHandler() {
         }
     }
 
-    return { postRecipePublic, postRecipePrivate, updateRecipe, loadPrivateRecipes, getUserId };
+    async function deleteRecipe(id: string, isPrivate: boolean): Promise<boolean> {
+        try {
+            const recipeId = encodeURIComponent(id);
+            const url = isPrivate
+                ? `${API_URL}/private/${encodeURIComponent(getUserId())}/${recipeId}`
+                : `${API_URL}/${recipeId}`;
+            const response = await fetch(url, { method: 'DELETE' });
+
+            if (!response.ok) {
+                throw new Error(`Request failed: ${response.status}`);
+            }
+
+            if (isPrivate) {
+                userRecipes.value = userRecipes.value.filter(recipe => recipe.id !== id);
+            } else {
+                publicRecipes.value = publicRecipes.value.filter(recipe => recipe.id !== id);
+            }
+
+            return true;
+        } catch {
+            alert('Kunde inte radera recept');
+            return false;
+        }
+    }
+
+    return { postRecipePublic, postRecipePrivate, updateRecipe, deleteRecipe, loadPrivateRecipes, getUserId };
 }

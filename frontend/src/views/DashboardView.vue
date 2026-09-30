@@ -17,7 +17,12 @@ const selectedComplexity = ref<ComplexityFilter>("Alla");
 const isFilterOpen = ref(false);
 const filterRef = ref<HTMLElement | null>(null);
 const defaultImg = "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop";
-const { postRecipePublic, postRecipePrivate, loadPrivateRecipes } = useRecipeHandler();
+const {
+  postRecipePublic,
+  postRecipePrivate,
+  deleteRecipe: deleteRecipeFromApi,
+  loadPrivateRecipes,
+} = useRecipeHandler();
 
 
 const mapDiff = (d: number) => {
@@ -82,8 +87,11 @@ function selectRecipe(r: Recipe) {
   activePage.value = "Visa recept";
 }
 
-function deleteRecipe(id: string) {
-  publicRecipes.value = publicRecipes.value.filter(r => r.id !== id);
+async function deleteRecipe(id: string) {
+  const isPrivate = userRecipes.value.some(recipe => recipe.id === id);
+  const deleted = await deleteRecipeFromApi(id, isPrivate);
+  if (!deleted) return;
+
   if (selectedRecipe.value?.id === id) {
     selectedRecipe.value = null;
     activePage.value = previousPage.value !== "Visa recept" ? previousPage.value : "Mina recept";
