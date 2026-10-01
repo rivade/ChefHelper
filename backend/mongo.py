@@ -70,12 +70,16 @@ def post_recipe_public(recipe, user_id):
     result = publiccollection.insert_one(recipe.copy())
     return serialize_recipe({"_id": result.inserted_id, **recipe})
 
-def patch_recipe_public(recipe_id, updates, user_id):
+def patch_recipe_public(recipe_id, updates, user_id, is_admin=False):
     if not ObjectId.is_valid(recipe_id):
         return None
 
+    recipe_filter = {"_id": ObjectId(recipe_id)}
+    if not is_admin:
+        recipe_filter["author"] = user_id
+
     updated_recipe = publiccollection.find_one_and_update(
-        {"_id": ObjectId(recipe_id), "author": user_id},
+        recipe_filter,
         {"$set": updates},
         return_document=ReturnDocument.AFTER,
     )
@@ -84,8 +88,15 @@ def patch_recipe_public(recipe_id, updates, user_id):
 
     return serialize_recipe(updated_recipe)
 
-def delete_recipe_public(recipe_id):
-    result = publiccollection.delete_one({"_id": ObjectId(recipe_id)})
+def delete_recipe_public(recipe_id, user_id, is_admin=False):
+    if not ObjectId.is_valid(recipe_id):
+        return {"deleted_count": 0}
+
+    recipe_filter = {"_id": ObjectId(recipe_id)}
+    if not is_admin:
+        recipe_filter["author"] = user_id
+
+    result = publiccollection.delete_one(recipe_filter)
     return {"deleted_count": result.deleted_count}
 
 #Private--------------------------------------------------------------------

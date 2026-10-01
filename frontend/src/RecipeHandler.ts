@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { useAuth0 } from "@auth0/auth0-vue";
+import { hasAdminRole } from "./auth/roles";
 import type { Recipe } from "./types/recipe.ts";
 
 export const publicRecipes = ref<Recipe[]>([]);
@@ -36,6 +37,7 @@ export async function loadPublicRecipes(options: { silent?: boolean } = {}): Pro
 
 export function useRecipeHandler() {
     const { user, isAuthenticated } = useAuth0();
+    const isAdmin = () => hasAdminRole(user.value);
 
     function getUserId(): string {
         const userId = user.value?.sub;
@@ -122,7 +124,7 @@ export function useRecipeHandler() {
             const recipeId = encodeURIComponent(id);
             const url = isPrivate
                 ? `${API_URL}/private/${userId}/${recipeId}`
-                : `${API_URL}/${userId}/${recipeId}`;
+                : `${API_URL}/${userId}/${recipeId}?is_admin=${isAdmin()}`;
 
             // Rensa metadata om det finns innan vi skickar till backend
             const { id: _id, author: _author, isFavorite: _fav, ...payload } = newRecipe as Record<string, unknown>;
@@ -162,7 +164,7 @@ export function useRecipeHandler() {
             const recipeId = encodeURIComponent(id);
             const url = isPrivate
                 ? `${API_URL}/private/${encodeURIComponent(getUserId())}/${recipeId}`
-                : `${API_URL}/${recipeId}`;
+                : `${API_URL}/${encodeURIComponent(getUserId())}/${recipeId}?is_admin=${isAdmin()}`;
             const response = await fetch(url, { method: 'DELETE' });
 
             if (!response.ok) {

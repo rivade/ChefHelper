@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useAuth0 } from "@auth0/auth0-vue";
+import { hasAdminRole } from "../../auth/roles";
 
 const { user, logout } = useAuth0();
 const isOpen = ref(false);
@@ -9,6 +10,7 @@ const menuRef = ref<HTMLElement | null>(null);
 const username = computed(
 	() => user.value?.nickname || user.value?.name || user.value?.email || "Användare",
 );
+const isAdmin = computed(() => hasAdminRole(user.value));
 
 function closeOnOutsideClick(event: MouseEvent) {
 	if (menuRef.value && !menuRef.value.contains(event.target as Node)) {
@@ -46,7 +48,7 @@ onUnmounted(() => {
 		>
 			<span class="min-w-0">
 				<strong class="block truncate text-[15px] font-medium leading-5">{{ username }}</strong>
-				<small class="block text-[13px] font-medium leading-5 text-[#5f5a54]">Kock</small>
+				<small class="block text-[13px] font-medium leading-5 text-[#5f5a54]">{{ isAdmin ? "Admin" : "Kock" }}</small>
 			</span>
 		</button>
 
