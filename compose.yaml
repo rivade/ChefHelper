@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      MONGODB_URI: ${MONGODB_URI:?Set MONGODB_URI in the project root .env}
+      CORS_ORIGINS: http://localhost:4173
+    ports:
+      - "8001:8001"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
+    ports:
+      - "4173:80"
+    depends_on:
+      - backend
