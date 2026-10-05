@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useAuth0 } from "@auth0/auth0-vue";
+import { hasAdminRole } from "../../auth/roles";
 import type { Recipe } from "../../types/recipe.ts";
 
 const props = defineProps<{
     recipe: Recipe;
+    isPublic: boolean;
 }>();
 
 const { user, isAuthenticated } = useAuth0();
@@ -12,6 +14,9 @@ const { user, isAuthenticated } = useAuth0();
 // Kontrollerar om den inloggade användaren är skaparen av receptet
 const isRecipeAuthor = computed(
     () => isAuthenticated.value && user.value?.sub === props.recipe.author
+);
+const canManageRecipe = computed(
+    () => isRecipeAuthor.value || (props.isPublic && hasAdminRole(user.value))
 );
 
 const emit = defineEmits<{
@@ -63,13 +68,13 @@ function handleDelete() {
                 </button>
 
                 <!-- REDIGERA-KNAPP (Visas endast för författaren) -->
-                <button v-if="isRecipeAuthor" type="button" @click="emit('edit')"
+                <button v-if="canManageRecipe" type="button" @click="emit('edit')"
                     class="rounded-[9px] bg-[#b4895e] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#966f48] sm:text-sm">
                     Redigera recept
                 </button>
 
                 <!-- TA BORT-KNAPP (Visas endast för författaren) -->
-                <button v-if="isRecipeAuthor" type="button" @click="handleDelete"
+                <button v-if="canManageRecipe" type="button" @click="handleDelete"
                     class="rounded-[9px] bg-[#b42318] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#911c13] sm:text-sm">
                     Ta bort recept
                 </button>

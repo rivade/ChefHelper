@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useAuth0 } from "@auth0/auth0-vue";
+import { hasAdminRole } from "../../auth/roles";
 import type { Recipe } from "../../types/recipe.ts";
 
 const props = defineProps<{
     search: string;
     activePage: string;
     recipes: Recipe[];
+    publicRecipeIds: string[];
 }>();
 
 const emit = defineEmits<{
@@ -16,8 +18,12 @@ const emit = defineEmits<{
 }>();
 
 const { user, isAuthenticated } = useAuth0();
+const isAdmin = computed(() => hasAdminRole(user.value));
 const isRecipeAuthor = (recipe: Recipe) =>
     isAuthenticated.value && user.value?.sub === recipe.author;
+const canManageRecipe = (recipe: Recipe) =>
+    isRecipeAuthor(recipe) ||
+    (isAdmin.value && props.publicRecipeIds.includes(recipe.id));
 
 const fallbackImage = "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop";
 
@@ -89,7 +95,7 @@ const filteredRecipes = computed(() => {
                         Visa recept
                     </button>
 
-                    <button v-if="isRecipeAuthor(recipe)" type="button" @click="emit('delete-recipe', recipe.id)"
+                    <button v-if="canManageRecipe(recipe)" type="button" @click="emit('delete-recipe', recipe.id)"
                         class="text-xs text-red-600 transition hover:underline">
                         Ta bort
                     </button>

@@ -95,7 +95,12 @@ def init():
         return mongo.post_recipe_public(recipe.model_dump(exclude_none=True), user_id)
 
     @app.patch("/api/recipes/{user_id}/{recipe_id}")
-    def patch_recipe_public(user_id: str, recipe_id: str, recipe: RecipePatch):
+    def patch_recipe_public(
+        user_id: str,
+        recipe_id: str,
+        recipe: RecipePatch,
+        is_admin: bool = False,
+    ):
         """Update recipe in public database"""
         updates = recipe.model_dump(exclude_unset=True)
         if not updates or any(value is None for value in updates.values()):
@@ -104,15 +109,20 @@ def init():
                 detail="Provide at least one non-null recipe field to update",
             )
 
-        updated_recipe = mongo.patch_recipe_public(recipe_id, updates, user_id)
+        updated_recipe = mongo.patch_recipe_public(
+            recipe_id, updates, user_id, is_admin
+        )
         if updated_recipe is None:
             raise HTTPException(status_code=401, detail="Unauthorized")
         return updated_recipe
 
-    @app.delete("/api/recipes/{recipe_id}")
-    def delete_recipe_public(recipe_id: str):
+    @app.delete("/api/recipes/{user_id}/{recipe_id}")
+    def delete_recipe_public(user_id: str, recipe_id: str, is_admin: bool = False):
         """Delete a public recipe by its ID"""
-        return mongo.delete_recipe_public(recipe_id)
+        result = mongo.delete_recipe_public(recipe_id, user_id, is_admin)
+        if result["deleted_count"] == 0:
+            raise HTTPException(status_code=404, detail="Recipe not found or unauthorized")
+        return result
 
     #Private--------------------------------------------------------------------------
     @app.get("/api/recipes/private/{user_id}")

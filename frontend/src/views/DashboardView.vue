@@ -57,6 +57,7 @@ const filteredRecipes = computed(() => {
     return matchSearch && diffClean === selectedClean;
   });
 });
+const publicRecipeIds = computed(() => publicRecipes.value.map((recipe) => recipe.id));
 
 const formatTime = (h: number, m: number) =>
   [h > 0 && `${h} tim`, (m > 0 || !h) && `${m} min`].filter(Boolean).join(" ");
@@ -188,7 +189,8 @@ onUnmounted(() => document.removeEventListener("click", onOutsideClick));
 
         <!-- Visa recept -->
         <div v-else-if="activePage === 'Visa recept'">
-          <VisaRecept v-if="selectedRecipe" :recipe="selectedRecipe" @back="activePage = previousPage"
+          <VisaRecept v-if="selectedRecipe" :recipe="selectedRecipe"
+            :is-public="publicRecipes.some((recipe) => recipe.id === selectedRecipe?.id)" @back="activePage = previousPage"
             @edit="activePage = 'Redigera recept'" @delete="deleteRecipe" @toggle-favorite="toggleFavorite" />
           <div v-else
             class="mx-auto max-w-[600px] rounded-xl border border-dashed border-[#deddd9] bg-white p-12 text-center text-gray-500">
@@ -207,6 +209,7 @@ onUnmounted(() => document.removeEventListener("click", onOutsideClick));
 
         <!-- Receptlista -->
         <Recipes v-else :search="search" :active-page="activePage" :recipes="filteredRecipes"
+          :public-recipe-ids="publicRecipeIds"
           @select-recipe="selectRecipe" @delete-recipe="deleteRecipe" @toggle-favorite="toggleFavorite" />
       </main>
     </div>
